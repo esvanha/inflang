@@ -125,7 +125,8 @@ impl Lexer {
                 None => break,
             };
 
-            if ch.is_whitespace() || ch == '(' || ch == ')' {
+            if ch.is_whitespace() || ch == '(' || ch == ')' || ch == ';' {
+                self.rewind(1);
                 break;
             }
 
@@ -149,7 +150,6 @@ impl Lexer {
             result.push(ch);
         }
 
-        self.rewind(1);
         Ok(result)
     }
 
