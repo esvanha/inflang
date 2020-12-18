@@ -166,6 +166,34 @@ impl Lexer {
         })
     }
 
+    fn take_integer(&mut self) -> Result<Token, Box<dyn std::error::Error>> {
+        let mut result = String::new();
+
+        loop {
+            let ch = match self.take_one() {
+                Some(ch) => ch,
+                None => break,
+            };
+
+            if ch.is_whitespace() || ch == '(' || ch == ')' || ch == ';' {
+                self.rewind(1);
+                break;
+            }
+
+            if !ch.is_digit(10) {
+                return Err(format!(
+                    "`{}`: unexpected `{}` while scanning integer",
+                    result, ch
+                )
+                .into());
+            }
+
+            result.push(ch);
+        }
+
+        Ok(Token{ token_type: TokenType::Integer, value: result })
+    }
+
 
     pub fn next_token(&mut self) -> Result<Token, Box<dyn std::error::Error>> {
         self.skip_whitespace();
@@ -201,7 +229,9 @@ impl Lexer {
                     value: String::new(),
                 })
             }
-            //.. todo: Some('0'..='9') => self.take_integer(),
+            Some('0'..='9') => {
+                Ok(self.take_integer()?)
+            }
             //.. todo: Some('"') => self.take_string(),
             Some(_) => { 
                 Ok(self.take_keyword_or_identifier()?)
