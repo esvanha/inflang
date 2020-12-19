@@ -2,7 +2,7 @@ mod lexer;
 use crate::lexer::{Lexer, TokenType};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut lexer = Lexer::new("let x = y; print(x); 234234; 42".to_string());
+    let mut lexer = Lexer::new("let x = y; print(\"Hello, world!\");".to_string());
 
     loop {
         let token = lexer.next_token()?;

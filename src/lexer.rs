@@ -194,6 +194,32 @@ impl Lexer {
         Ok(Token{ token_type: TokenType::Integer, value: result })
     }
 
+    fn take_string_literal(&mut self) -> Result<Token, Box<dyn std::error::Error>> {
+        self.expect_ch('"')?;
+
+        let mut string_literal = String::new();
+
+        loop {
+            let ch = match self.take_one() {
+                Some(ch) => ch,
+                None => {
+                    return Err(format!(
+                        "`\"{}`: unterminated string literal, got EOF",
+                        string_literal
+                    ).into());
+                }
+            };
+
+            if ch == '"' {
+                break;
+            }
+
+            string_literal.push(ch);
+        }
+
+        Ok(Token{ token_type: TokenType::StringLiteral, value: string_literal })
+    }
+
 
     pub fn next_token(&mut self) -> Result<Token, Box<dyn std::error::Error>> {
         self.skip_whitespace();
@@ -229,10 +255,8 @@ impl Lexer {
                     value: String::new(),
                 })
             }
-            Some('0'..='9') => {
-                Ok(self.take_integer()?)
-            }
-            //.. todo: Some('"') => self.take_string(),
+            Some('0'..='9') => self.take_integer(),
+            Some('"') => self.take_string_literal(),
             Some(_) => { 
                 Ok(self.take_keyword_or_identifier()?)
             },
