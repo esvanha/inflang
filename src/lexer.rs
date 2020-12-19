@@ -2,23 +2,23 @@ use std::cmp::{max, min};
 
 #[derive(Debug, PartialEq)]
 pub enum TokenType {
-    Let,            //.. let
-    If,             //.. if
-    Else,           //.. else
-    Semicolon,      //.. ;
-    Identifier, //.. x
-    Integer,    //.. 0-9
-    True, //.. true
-    False, //.. false
-    LParen, //.. )
-    RParen, //.. )
-    Comma,          //.. ,
-    StringLiteral,  //.. "*"
-    Plus, //.. +
-    Minus, //.. -
-    Multiply, //.. *
-    Divide, //.. /
-    Equals, //.. ==
+    Let,                //.. let
+    If,                 //.. if
+    Else,               //.. else
+    Semicolon,          //.. ;
+    Identifier,         //.. x
+    Integer,            //.. 0-9
+    True,               //.. true
+    False,              //.. false
+    LParen,             //.. )
+    RParen,             //.. )
+    Comma,              //.. ,
+    StringLiteral,      //.. "*"
+    Plus,               //.. +
+    Minus,              //.. -
+    Multiply,           //.. *
+    Divide,             //.. /
+    Equals,             //.. ==
     AssignmentOperator, //.. =
     EOF,
 }
@@ -26,7 +26,7 @@ pub enum TokenType {
 #[derive(Debug)]
 pub struct Token {
     pub token_type: TokenType,
-    pub value: String, //.. todo: make Option<String>(?)
+    pub value: String,
 }
 
 #[derive(Debug)]
@@ -222,48 +222,31 @@ impl Lexer {
 
 
     pub fn next_token(&mut self) -> Result<Token, Box<dyn std::error::Error>> {
+        let consume_and_return = |this: &mut Lexer, t_type| -> Result<Token, Box<dyn std::error::Error>> {
+            this.consume(1);
+            Ok(Token {
+                token_type: t_type,
+                value: String::new(),
+            })
+        };
+
         self.skip_whitespace();
         //.. todo: allow comments
 
-        //.. todo: don't use match (DRY)
         match self.peek_one() {
-            Some('(') => {
-                self.consume(1);
-                Ok(Token {
-                    token_type: TokenType::LParen,
-                    value: String::new(),
-                })
-            }
-            Some(')') => {
-                self.consume(1);
-                Ok(Token {
-                    token_type: TokenType::RParen,
-                    value: String::new(),
-                })
-            }
-            Some(';') => {
-                self.consume(1);
-                Ok(Token {
-                    token_type: TokenType::Semicolon,
-                    value: String::new(),
-                })
-            }
-            Some('=') => {
-                self.consume(1);
-                Ok(Token {
-                    token_type: TokenType::AssignmentOperator,
-                    value: String::new(),
-                })
-            }
+            Some('(')       => consume_and_return(self, TokenType::LParen),
+            Some(')')       => consume_and_return(self, TokenType::RParen),
+            Some(';')       => consume_and_return(self, TokenType::Semicolon),
+            Some('=')       => consume_and_return(self, TokenType::AssignmentOperator),
             Some('0'..='9') => self.take_integer(),
-            Some('"') => self.take_string_literal(),
-            Some(_) => { 
-                Ok(self.take_keyword_or_identifier()?)
-            },
-            None => Ok(Token {
-                token_type: TokenType::EOF,
-                value: String::new(),
-            }),
+            Some('"')       => self.take_string_literal(),
+            Some(_)         => self.take_keyword_or_identifier(),
+            None            => Ok(
+                Token {
+                    token_type: TokenType::EOF,
+                    value: String::new(),
+                }
+            ),
         }
     }
 }
