@@ -125,7 +125,7 @@ impl Lexer {
                 None => break,
             };
 
-            if ch.is_whitespace() || ch == '(' || ch == ')' || ch == ';' {
+            if ch.is_whitespace() || ch == '(' || ch == ')' || ch == ';' || ch == ',' {
                 self.rewind(1);
                 break;
             }
@@ -137,7 +137,6 @@ impl Lexer {
                 || ch == '-'
                 || ch == '>'
                 || ch == '<'
-                || ch == ';'
                 || ch.is_ascii_alphanumeric())
             {
                 return Err(format!(
@@ -175,7 +174,7 @@ impl Lexer {
                 None => break,
             };
 
-            if ch.is_whitespace() || ch == '(' || ch == ')' || ch == ';' {
+            if ch.is_whitespace() || ch == '(' || ch == ')' || ch == ';' || ch == ',' {
                 self.rewind(1);
                 break;
             }
@@ -238,6 +237,7 @@ impl Lexer {
             Some(')')       => consume_and_return(self, TokenType::RParen),
             Some(';')       => consume_and_return(self, TokenType::Semicolon),
             Some('=')       => consume_and_return(self, TokenType::AssignmentOperator),
+            Some(',')       => consume_and_return(self, TokenType::Comma),
             Some('0'..='9') => self.take_integer(),
             Some('"')       => self.take_string_literal(),
             Some(_)         => self.take_keyword_or_identifier(),
