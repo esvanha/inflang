@@ -10,8 +10,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             break;
         }
 
-        println!("{:#?}", token);
+        print!("{} ", token.token_type);
     }
+    print!("\n");
 
     Ok(())
 }

@@ -2,25 +2,43 @@ use std::cmp::{max, min};
 
 #[derive(Debug, PartialEq)]
 pub enum TokenType {
-    Let,                //.. let
-    If,                 //.. if
+    AssignmentOperator, //.. =
+    Comma,              //.. ,
     Else,               //.. else
-    Semicolon,          //.. ;
-    Identifier,         //.. x
-    Integer,            //.. 0-9
-    True,               //.. true
+    EOF,
     False,              //.. false
+    Identifier,         //.. x
+    If,                 //.. if
+    Integer,            //.. 0-9
+    Let,                //.. let
     LParen,             //.. )
     RParen,             //.. )
-    Comma,              //.. ,
+    Semicolon,          //.. ;
     StringLiteral,      //.. "*"
-    Plus,               //.. +
-    Minus,              //.. -
-    Multiply,           //.. *
-    Divide,             //.. /
-    Equals,             //.. ==
-    AssignmentOperator, //.. =
-    EOF,
+    True,               //.. true
+}
+
+impl std::fmt::Display for TokenType {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let token_type_as_str = match *self {
+            TokenType::AssignmentOperator   => "=",
+            TokenType::Comma                => ",",
+            TokenType::Else                 => "else",
+            TokenType::EOF                  => "end of file",
+            TokenType::False                => "false",
+            TokenType::Identifier           => "identifier",
+            TokenType::If                   => "if",
+            TokenType::Integer              => "integer",
+            TokenType::Let                  => "let",
+            TokenType::LParen               => "(",
+            TokenType::RParen               => ")",
+            TokenType::Semicolon            => ";",
+            TokenType::StringLiteral        => "string literal",
+            TokenType::True                 => "true",
+        };
+
+        write!(f, "{}", token_type_as_str)
+    }
 }
 
 #[derive(Debug)]
