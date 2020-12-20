@@ -1,16 +1,25 @@
 mod lexer;
+mod parser;
+mod ast;
 use crate::lexer::{Lexer, TokenType};
+use crate::parser::Parser;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut lexer = Lexer::new("let id = fn (x) { x }; if id(true) { print(\"true == true\"); } else { print(\"?\"); }".to_string());
+    let mut parser = Parser::new("
+        let id = fn (x) {
+            x
+        };
+        
+        if id(true) {
+            print(\"true == true\");
+        } else {
+            print(\"?\");
+        }"
+        .to_string()
+    );
 
     loop {
-        let token = lexer.next_token()?;
-        if token.token_type == TokenType::EOF {
-            break;
-        }
-
-        print!("{} ", token.token_type);
+        let expression = parser.parse_expression()?;
     }
     print!("\n");
 

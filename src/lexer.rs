@@ -1,6 +1,6 @@
 use std::cmp::{max, min};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     AssignmentOperator, //.. =
     Comma,              //.. ,
@@ -51,10 +51,35 @@ impl std::fmt::Display for TokenType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
     pub value: String,
+}
+
+impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let token_as_str = match self {
+            Token {
+                token_type: TokenType::StringLiteral,
+                value: string
+            } => format!("\"{}\"", string),
+            Token {
+                token_type: TokenType::Identifier,
+                value: identifier
+            } => identifier.clone(),
+            Token {
+                token_type: TokenType::Integer,
+                value: integer,
+            } => integer.clone(),
+            Token {
+                token_type: t_type,
+                value: _,
+            } => format!("{}", t_type),
+        };
+
+        write!(f, "{}", token_as_str)
+    }
 }
 
 #[derive(Debug)]
