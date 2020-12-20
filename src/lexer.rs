@@ -7,12 +7,17 @@ pub enum TokenType {
     Else,               //.. else
     EOF,
     False,              //.. false
+    Fn,                 //.. fn
     Identifier,         //.. x
     If,                 //.. if
     Integer,            //.. 0-9
+    LCurlyBrace,        //.. {
     Let,                //.. let
-    LParen,             //.. )
+    LParen,             //.. (
+    LSquareBracket,     //.. [
+    RCurlyBrace,        //.. }
     RParen,             //.. )
+    RSquareBracket,     //.. ]
     Semicolon,          //.. ;
     StringLiteral,      //.. "*"
     True,               //.. true
@@ -26,12 +31,17 @@ impl std::fmt::Display for TokenType {
             TokenType::Else                 => "else",
             TokenType::EOF                  => "end of file",
             TokenType::False                => "false",
+            TokenType::Fn                   => "fn",
             TokenType::Identifier           => "identifier",
             TokenType::If                   => "if",
             TokenType::Integer              => "integer",
+            TokenType::LCurlyBrace          => "{",
             TokenType::Let                  => "let",
             TokenType::LParen               => "(",
+            TokenType::LSquareBracket       => "[",
+            TokenType::RCurlyBrace          => "}",
             TokenType::RParen               => ")",
+            TokenType::RSquareBracket       => "]",
             TokenType::Semicolon            => ";",
             TokenType::StringLiteral        => "string literal",
             TokenType::True                 => "true",
@@ -143,7 +153,16 @@ impl Lexer {
                 None => break,
             };
 
-            if ch.is_whitespace() || ch == '(' || ch == ')' || ch == ';' || ch == ',' {
+            if ch.is_whitespace()
+                || ch == '('
+                || ch == ')'
+                || ch == ';'
+                || ch == ','
+                || ch == '['
+                || ch == ']'
+                || ch == '}'
+                || ch == '{'
+            {
                 self.rewind(1);
                 break;
             }
@@ -174,12 +193,13 @@ impl Lexer {
         let keyword_or_identifier = self.keyword_or_identifier()?;
 
         Ok(match &keyword_or_identifier[..] {
-            "let" => Token{ token_type: TokenType::Let, value: String::new() },
-            "if" => Token { token_type: TokenType::If, value: String::new() },
-            "else" => Token { token_type: TokenType::Else, value: String::new() },
-            "true" => Token { token_type: TokenType::True, value: String::new() },
+            "let"   => Token { token_type: TokenType::Let, value: String::new() },
+            "if"    => Token { token_type: TokenType::If, value: String::new() },
+            "else"  => Token { token_type: TokenType::Else, value: String::new() },
+            "true"  => Token { token_type: TokenType::True, value: String::new() },
             "false" => Token { token_type: TokenType::False, value: String::new() },
-            _ => Token { token_type: TokenType::Identifier, value: keyword_or_identifier }
+            "fn"    => Token { token_type: TokenType::Fn, value: String::new() },
+            _       => Token { token_type: TokenType::Identifier, value: keyword_or_identifier }
         })
     }
 
@@ -192,7 +212,16 @@ impl Lexer {
                 None => break,
             };
 
-            if ch.is_whitespace() || ch == '(' || ch == ')' || ch == ';' || ch == ',' {
+            if ch.is_whitespace()
+                || ch == '('
+                || ch == ')'
+                || ch == ';'
+                || ch == ','
+                || ch == '['
+                || ch == ']'
+                || ch == '}'
+                || ch == '{'
+            {
                 self.rewind(1);
                 break;
             }
@@ -256,6 +285,10 @@ impl Lexer {
             Some(';')       => consume_and_return(self, TokenType::Semicolon),
             Some('=')       => consume_and_return(self, TokenType::AssignmentOperator),
             Some(',')       => consume_and_return(self, TokenType::Comma),
+            Some('{')       => consume_and_return(self, TokenType::LCurlyBrace),
+            Some('}')       => consume_and_return(self, TokenType::RCurlyBrace),
+            Some('[')       => consume_and_return(self, TokenType::LSquareBracket),
+            Some(']')       => consume_and_return(self, TokenType::RSquareBracket),
             Some('0'..='9') => self.take_integer(),
             Some('"')       => self.take_string_literal(),
             Some(_)         => self.take_keyword_or_identifier(),
