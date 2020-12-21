@@ -102,6 +102,7 @@ impl Parser {
 
     fn parse_fn_declaration(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
         //.. fn (<argument names, separated by `,`>) <block>
+        
         self.expect(lexer::TokenType::Fn)?;
 
         self.expect(lexer::TokenType::LParen)?;
@@ -115,15 +116,40 @@ impl Parser {
             }
 
             let argument_name = self.expect(lexer::TokenType::Identifier)?;
-
             argument_names.push(ast::Expression::Identifier(argument_name.value));
+            
             was_separated = self.accept(lexer::TokenType::Comma)?.is_some();
-
         }
 
         let fn_body = self.parse_block()?;
 
         Ok(ast::Expression::Fn(argument_names, Box::new(fn_body)))
+    }
+
+    pub fn parse_fn_call(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
+        //.. <identifier>(<arguments, separated by `,`>)
+
+        let function_name = self.expect(lexer::TokenType::Identifier)?.value;
+
+        self.expect(lexer::TokenType::LParen)?;
+
+        let mut arguments = Vec::new();
+        let mut was_separated = true;
+
+        while self.accept(lexer::TokenType::RParen)?.is_none() {
+            if !was_separated {
+                return Err("unseparated argument name in fn call".into());
+            }
+
+            arguments.push(self.parse_expression()?);
+            
+            was_separated = self.accept(lexer::TokenType::Comma)?.is_some();
+        }
+
+        Ok(ast::Expression::FnCall(
+            Box::new(ast::Expression::Identifier(function_name)),
+            arguments
+        ))
     }
 
     pub fn parse_program(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
@@ -157,7 +183,12 @@ impl Parser {
             lexer::Token {
                 token_type: lexer::TokenType::Identifier,
                 value: identifier,
-            } => todo!("parse as identifier or function call"),
+            } => {
+                self.parse_fn_call()
+                    .or(Ok(
+                        ast::Expression::Identifier(identifier)
+                    ))
+            }
 
             lexer::Token {
                 token_type: lexer::TokenType::Integer,

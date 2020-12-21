@@ -6,18 +6,17 @@ use crate::parser::Parser;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut parser = Parser::new("
-        let two = 2;
-        let str = \"Hello, world!\";
-
-        let return_two = fn (x n) {
+        let return_two = fn () {
             2;
         };
     
-        let result = if true {
-            \"true == true\";
+        let result = if eq(return_two(), add(1, 1)) {
+            \"true\";
         } else {
-            \"true /= true ??\";
+            \"false\";
         };
+        
+        print(result);
         "
         .to_string()
     );
