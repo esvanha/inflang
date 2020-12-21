@@ -41,12 +41,28 @@ impl Parser {
         }
     }
 
+    fn parse_let_expression(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
+        //.. let <identifier> = <expression>;
+
+        self.expect(lexer::TokenType::Let)?;
+
+        let variable_name = self.expect(lexer::TokenType::Identifier)?.value;
+
+        self.expect(lexer::TokenType::AssignmentOperator)?;
+
+        let expression = self.parse_expression()?;
+
+        self.expect(lexer::TokenType::Semicolon)?;
+
+        Ok(ast::Expression::LetBinding(variable_name, Box::new(expression)))
+    }
+
     pub fn parse_expression(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
         match self.peek_token()? {
             lexer::Token {
                 token_type: lexer::TokenType::Let,
                 value: _,
-            } => todo!(),
+            } => self.parse_let_expression(),
 
             lexer::Token {
                 token_type: lexer::TokenType::If,
