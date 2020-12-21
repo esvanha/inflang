@@ -6,6 +6,8 @@ use crate::parser::Parser;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut parser = Parser::new("
+        let list = [1, 2, 3, add(3, 1)];
+
         let return_two = fn () {
             2;
         };
@@ -15,7 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         } else {
             \"false\";
         };
-        
+
         print(result);
         "
         .to_string()

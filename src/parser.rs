@@ -126,7 +126,7 @@ impl Parser {
         Ok(ast::Expression::Fn(argument_names, Box::new(fn_body)))
     }
 
-    pub fn parse_fn_call(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
+    fn parse_fn_call(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
         //.. <identifier>(<arguments, separated by `,`>)
 
         let function_name = self.expect(lexer::TokenType::Identifier)?.value;
@@ -150,6 +150,27 @@ impl Parser {
             Box::new(ast::Expression::Identifier(function_name)),
             arguments
         ))
+    }
+
+    fn parse_list(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
+        //.. [ <items, separated by `,`> ]
+        
+        self.expect(lexer::TokenType::LSquareBracket)?;
+
+        let mut items = Vec::new();
+        let mut was_separated = true;
+
+        while self.accept(lexer::TokenType::RSquareBracket)?.is_none() {
+            if !was_separated {
+                return Err("unseparated item in list".into());
+            }
+
+            items.push(self.parse_expression()?);
+            
+            was_separated = self.accept(lexer::TokenType::Comma)?.is_some();
+        }
+
+        Ok(ast::Expression::List(items))
     }
 
     pub fn parse_program(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
@@ -209,7 +230,7 @@ impl Parser {
             lexer::Token {
                 token_type: lexer::TokenType::LSquareBracket,
                 value: _,
-            } => todo!(),
+            } => self.parse_list(),
 
             lexer::Token {
                 token_type: lexer::TokenType::True,
