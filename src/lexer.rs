@@ -199,6 +199,7 @@ impl Lexer {
                 || ch == '-'
                 || ch == '>'
                 || ch == '<'
+                || ch == '_'
                 || ch.is_ascii_alphanumeric())
             {
                 return Err(format!(

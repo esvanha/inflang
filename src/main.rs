@@ -8,6 +8,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut parser = Parser::new("
         let two = 2;
         let str = \"Hello, world!\";
+
+        let return_two = fn (x n) {
+            2;
+        };
     
         let result = if true {
             \"true == true\";
