@@ -66,6 +66,40 @@ impl Parser {
         Ok(ast::Expression::LetBinding(variable_name, Box::new(expression)))
     }
 
+    fn parse_block(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
+        //.. { <one or more expressions, separated by `;`> }
+
+        self.expect(lexer::TokenType::LCurlyBrace)?;
+
+        let mut expressions = Vec::new();
+
+        while self.accept(lexer::TokenType::RCurlyBrace)?.is_none() {
+            expressions.push(self.parse_expression()?);
+            self.expect(lexer::TokenType::Semicolon)?;
+        }
+
+        Ok(ast::Expression::Block(expressions))
+    }
+
+    fn parse_if_expression(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
+        //.. if <block> else <block>
+        self.expect(lexer::TokenType::If)?;
+
+        let condition = self.parse_expression()?;
+
+        let when_true_block = self.parse_block()?;
+
+        self.expect(lexer::TokenType::Else)?;
+
+        let when_false_block = self.parse_block()?;
+
+        Ok(ast::Expression::IfExpression(
+            Box::new(condition),
+            Box::new(when_true_block),
+            Box::new(when_false_block),
+        ))
+    }
+
     pub fn parse_program(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
         let mut expressions = Vec::new();
 
@@ -87,7 +121,7 @@ impl Parser {
             lexer::Token {
                 token_type: lexer::TokenType::If,
                 value: _,
-            } => todo!(),
+            } => self.parse_if_expression(),
 
             lexer::Token {
                 token_type: lexer::TokenType::Fn,
@@ -119,6 +153,22 @@ impl Parser {
                 token_type: lexer::TokenType::LSquareBracket,
                 value: _,
             } => todo!(),
+
+            lexer::Token {
+                token_type: lexer::TokenType::True,
+                value: _,
+            } => {
+                self.consume_token();
+                Ok(ast::Expression::BooleanValue(true))
+            },
+
+            lexer::Token {
+                token_type: lexer::TokenType::False,
+                value: _,
+            } => {
+                self.consume_token();
+                Ok(ast::Expression::BooleanValue(false))
+            }
 
             lexer::Token {
                 token_type: lexer::TokenType::EOF,
