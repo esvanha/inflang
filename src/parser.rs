@@ -41,8 +41,19 @@ impl Parser {
         }
     }
 
+    fn accept(&mut self, token_type: lexer::TokenType) -> Result<Option<lexer::Token>, Box<dyn std::error::Error>> {
+        let tok = self.peek_token()?;
+
+        Ok(if tok.token_type == token_type {
+            self.consume_token();
+            Some(tok)
+        } else {
+            None
+        })
+    }
+
     fn parse_let_expression(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
-        //.. let <identifier> = <expression>;
+        //.. let <identifier> = <expression>
 
         self.expect(lexer::TokenType::Let)?;
 
@@ -52,11 +63,20 @@ impl Parser {
 
         let expression = self.parse_expression()?;
 
-        self.expect(lexer::TokenType::Semicolon)?;
-
         Ok(ast::Expression::LetBinding(variable_name, Box::new(expression)))
     }
 
+    pub fn parse_program(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
+        let mut expressions = Vec::new();
+
+        while self.accept(lexer::TokenType::EOF)?.is_none() {
+            expressions.push(self.parse_expression()?);
+            self.expect(lexer::TokenType::Semicolon)?;
+        }
+
+        Ok(ast::Expression::Program(expressions))
+    }
+ 
     pub fn parse_expression(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
         match self.peek_token()? {
             lexer::Token {

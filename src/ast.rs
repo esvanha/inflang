@@ -14,6 +14,7 @@ pub enum Expression {
     LetBinding(String, Box<Expression>),
     //.. FnCall: function, arguments
     FnCall(Box<Expression>, Vec<Expression>),
-    Body(Vec<Expression>),
+    Block(Vec<Expression>),
+    Program(Vec<Expression>),
     EndOfProgram
 }
