@@ -1,5 +1,5 @@
 use crate::lexer;
-use crate::ast::Expression;
+use crate::ast;
 
 pub struct Parser {
     lexer: lexer::Lexer,
@@ -30,56 +30,71 @@ impl Parser {
         let tok = self.peek_token()?;
 
         if tok.token_type == expected_type {
+            self.consume_token();
             Ok(tok)
         } else {
             Err(format!(
-                "expected token of type {}, got `{}` of type {} instead",
-                expected_type, tok.value, tok.token_type
+                "expected token of type {}, got `{}` instead",
+                expected_type, tok
             )
             .into())
         }
     }
 
-    pub fn parse_expression(&mut self) -> Result<Expression, Box<dyn std::error::Error>> {
+    pub fn parse_expression(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
         match self.peek_token()? {
             lexer::Token {
                 token_type: lexer::TokenType::Let,
                 value: _,
             } => todo!(),
+
             lexer::Token {
                 token_type: lexer::TokenType::If,
                 value: _,
             } => todo!(),
+
             lexer::Token {
                 token_type: lexer::TokenType::Fn,
                 value: _,
             } => todo!(),
+
             lexer::Token {
                 token_type: lexer::TokenType::Identifier,
                 value: identifier,
             } => todo!("parse as identifier or function call"),
+
             lexer::Token {
                 token_type: lexer::TokenType::Integer,
                 value: integer,
-            } => todo!(),
+            } => {
+                self.consume_token();
+                Ok(ast::Expression::IntegerValue(integer.parse()?))
+            },
+
             lexer::Token {
                 token_type: lexer::TokenType::StringLiteral,
                 value: string,
-            } => todo!(),
+            } => {
+                self.consume_token();
+                Ok(ast::Expression::StringValue(string))
+            }
+
             lexer::Token {
                 token_type: lexer::TokenType::LSquareBracket,
                 value: _,
             } => todo!(),
+
             lexer::Token {
                 token_type: lexer::TokenType::EOF,
                 value: _,
-            } => todo!(),
+            } => Ok(ast::Expression::EndOfProgram),
+
             misc_token => {
                 return Err(format!(
                     "unexpected `{}`; no valid expression starts with this",
                     misc_token
                 ).into());
             }
-        };
+        }
     }
 }

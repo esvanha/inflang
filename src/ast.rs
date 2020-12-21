@@ -1,5 +1,5 @@
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum Expression {
     List(Vec<Expression>),
     IntegerValue(u64),
