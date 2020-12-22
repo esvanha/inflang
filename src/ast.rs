@@ -18,3 +18,34 @@ pub enum Expression {
     Program(Vec<Expression>),
     EndOfProgram
 }
+
+impl Expression {
+    pub fn integer_value(&self) -> Result<u64, Box<dyn std::error::Error>> {
+        match &self {
+            Self::IntegerValue(n) => Ok(*n),
+            //.. todo: add Display trait to Expression
+            _ => Err(format!("expected integer, got `{:#?}`", self).into()),
+        }
+    }
+
+    pub fn string_value(&self) -> Result<String, Box<dyn std::error::Error>> {
+        match &self {
+            Self::StringValue(n) => Ok(n.clone()),
+            _ => Err(format!("expected string, got `{:#?}`", self).into()),
+        }
+    }
+
+    pub fn boolean_value(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        match &self {
+            Self::BooleanValue(n) => Ok(*n),
+            _ => Err(format!("expected boolean, got `{:#?}`", self).into()),
+        }
+    }
+
+    pub fn identifier_name(&self) -> Result<String, Box<dyn std::error::Error>> {
+        match &self {
+            Self::Identifier(name) => Ok(name.clone()),
+            _ => Err(format!("expected identifier, got `{:#?}`", self).into()),
+        }
+    }
+}
