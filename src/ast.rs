@@ -19,6 +19,7 @@ pub enum Expression {
     FnCall(Box<Expression>, Vec<Expression>),
     Block(Vec<Expression>),
     Program(Vec<Expression>),
+    Null,
     EndOfProgram
 }
 
@@ -69,12 +70,29 @@ impl Expression {
             Self::BooleanValue(_) => self,
             Self::IntegerValue(_) => self,
             Self::StringValue(_) => self,
+            Self::Null => self,
             Self::Identifier(identifier) => {
                 match ctx.borrow().variables.get(identifier) {
                     Some(value) => value.clone(),
                     None => return Err(format!("unknown identifier `{}`", identifier).into()),
                 }
             },
+            Self::Block(expressions) => {
+                let mut return_value = Self::Null;
+
+                for expression in expressions.iter() {
+                    return_value = expression.clone().evaluate(ctx.clone())?;
+                }
+
+                return_value
+            },
+            Self::IfExpression(condition, if_block, else_block) => {
+                if condition.clone().evaluate(ctx.clone())?.boolean_value()? {
+                    if_block.clone().evaluate(ctx.clone())?
+                } else {
+                    else_block.clone().evaluate(ctx.clone())?
+                }
+            }
             _ => todo!()
         })
     }
