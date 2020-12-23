@@ -71,12 +71,14 @@ impl Expression {
             Self::IntegerValue(_) => self,
             Self::StringValue(_) => self,
             Self::Null => self,
+
             Self::Identifier(identifier) => {
                 match ctx.borrow().variables.get(identifier) {
                     Some(value) => value.clone(),
                     None => return Err(format!("unknown identifier `{}`", identifier).into()),
                 }
             },
+
             Self::Block(expressions) => {
                 let mut return_value = Self::Null;
 
@@ -86,13 +88,25 @@ impl Expression {
 
                 return_value
             },
+
             Self::IfExpression(condition, if_block, else_block) => {
                 if condition.clone().evaluate(ctx.clone())?.boolean_value()? {
                     if_block.clone().evaluate(ctx.clone())?
                 } else {
                     else_block.clone().evaluate(ctx.clone())?
                 }
+            },
+
+            Self::List(expressions) => {
+                let mut result_list = Vec::new();
+
+                for expression in expressions {
+                    result_list.push(expression.clone().evaluate(ctx.clone())?);
+                }
+
+                Expression::List(result_list)
             }
+            
             _ => todo!()
         })
     }
