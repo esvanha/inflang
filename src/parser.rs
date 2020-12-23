@@ -78,6 +78,10 @@ impl Parser {
             self.expect(lexer::TokenType::Semicolon)?;
         }
 
+        if expressions.is_empty() {
+            return Err("expected at least one expression in block, got none".into());
+        }
+
         Ok(ast::Expression::Block(expressions))
     }
 
