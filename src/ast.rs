@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 #[derive(Debug, Clone)]
 pub enum Expression {
@@ -17,6 +20,18 @@ pub enum Expression {
     Block(Vec<Expression>),
     Program(Vec<Expression>),
     EndOfProgram
+}
+
+pub struct EvaluationScope {
+    variables: HashMap<String, Expression>,
+}
+
+impl EvaluationScope {
+    pub fn new() -> Self {
+        Self {
+            variables: HashMap::new(),
+        }
+    }
 }
 
 impl Expression {
@@ -47,5 +62,20 @@ impl Expression {
             Self::Identifier(name) => Ok(name.clone()),
             _ => Err(format!("expected identifier, got `{:#?}`", self).into()),
         }
+    }
+
+    pub fn evaluate(self, ctx: Rc<RefCell<EvaluationScope>>) -> Result<Expression, Box<dyn std::error::Error>> {
+        Ok(match &self {
+            Self::BooleanValue(_) => self,
+            Self::IntegerValue(_) => self,
+            Self::StringValue(_) => self,
+            Self::Identifier(identifier) => {
+                match ctx.borrow().variables.get(identifier) {
+                    Some(value) => value.clone(),
+                    None => return Err(format!("unknown identifier `{}`", identifier).into()),
+                }
+            },
+            _ => todo!()
+        })
     }
 }
