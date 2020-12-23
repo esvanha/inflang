@@ -105,8 +105,19 @@ impl Expression {
                 }
 
                 Expression::List(result_list)
+            },
+
+            Self::LetBinding(variable_name, value) => {
+                let evaluated_value = value.clone().evaluate(ctx.clone())?;
+                
+                ctx.borrow_mut().variables.insert(
+                    variable_name.clone(),
+                    evaluated_value.clone()
+                );
+                
+                evaluated_value
             }
-            
+
             _ => todo!()
         })
     }

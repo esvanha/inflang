@@ -12,20 +12,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut parser = Parser::new("
         [
-            if false {
-                \"true\";
-            } else {
-                \"false\";
-            },
-            23,
-            [
-                if true {
-                    1;
-                } else {
-                    2;
-                },
-                \"list item\"
-            ]
+            let a = 3,
+            a
         ]
         "
         .to_string()
