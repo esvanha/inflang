@@ -114,9 +114,43 @@ impl Expression {
                     variable_name.clone(),
                     evaluated_value.clone()
                 );
-                
+
                 evaluated_value
             }
+
+            Self::FnCall(function_name, argument_values) => {
+                let variables = ctx.borrow_mut().variables.clone();
+                let function_name_str = function_name.clone().identifier_name()?;
+                let function = variables.get(&function_name_str);
+
+                match function {
+                    Some(Self::Fn(argument_names, body)) => {
+                        if argument_values.len() != argument_names.len() {
+                            return Err(format!(
+                                "function `{}` expected {} arguments, got {} instead",
+                                function_name_str, argument_names.len(), argument_values.len(),
+                            ).into())
+                        }
+
+                        for i in 0..argument_names.len() {
+                            let name = argument_names[i].identifier_name()?;
+                            let value = argument_values[i].clone().evaluate(ctx.clone())?.clone();
+
+                            ctx.borrow_mut().variables.insert(name, value);
+                        }
+
+                        body.clone().evaluate(ctx.clone())?
+                    },
+                    Some(other) => {
+                        return Err(format!("trying to call `{:#?}`, which is not a function", other).into());
+                    },
+                    None => {
+                        return Err(format!("unknown identifier `{}`", function_name_str).into());
+                    }
+                }
+            },
+            
+            Self::Fn(_, _) => self,
 
             _ => todo!()
         })
