@@ -71,6 +71,8 @@ impl Expression {
             Self::IntegerValue(_) => self,
             Self::StringValue(_) => self,
             Self::Null => self,
+            Self::EndOfProgram => self,
+            Self::Fn(_, _) => self,
 
             Self::Identifier(identifier) => {
                 match ctx.borrow().variables.get(identifier) {
@@ -150,9 +152,13 @@ impl Expression {
                 }
             },
             
-            Self::Fn(_, _) => self,
+            Self::Program(expressions) => {
+                for expression in expressions.iter() {
+                    expression.clone().evaluate(ctx.clone())?;
+                }
 
-            _ => todo!()
+                Expression::EndOfProgram
+            },
         })
     }
 }

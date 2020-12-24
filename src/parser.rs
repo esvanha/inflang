@@ -14,7 +14,7 @@ impl Parser {
         }
     }
 
-    pub fn peek_token(&mut self) -> Result<lexer::Token, Box<dyn std::error::Error>> {
+    fn peek_token(&mut self) -> Result<lexer::Token, Box<dyn std::error::Error>> {
         if self.lexed_tokens.len() == 0 {
             self.lexed_tokens.push(self.lexer.next_token()?);
         }
@@ -22,7 +22,7 @@ impl Parser {
         Ok(self.lexed_tokens.last().cloned().unwrap())
     }
 
-    pub fn consume_token(&mut self) {
+    fn consume_token(&mut self) {
         self.lexed_tokens.pop();
     }
 
