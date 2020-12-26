@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Expression {
     List(Vec<Expression>),
     IntegerValue(u64),
@@ -23,6 +23,83 @@ pub enum Expression {
     EndOfProgram
 }
 
+impl std::fmt::Display for Expression {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let expr_as_str = match self {
+            Self::List(expressions) => {
+                format!(
+                    "[{}]",
+                    expressions
+                        .iter()
+                        .map(|expression| expression.to_string())
+                        .collect::<Vec<String>>()
+                        .join(", ")
+                )
+            },
+            Self::IntegerValue(n) => n.to_string(),
+            Self::Program(expressions) => {
+                format!(
+                    "{}",
+                    expressions
+                        .iter()
+                        .map(|expression| expression.to_string() + ";")
+                        .collect::<Vec<String>>()
+                        .join("\n")
+                )
+            },
+            Self::IfExpression(condition, if_true, if_false) => {
+                format!(
+                    "if {} {} else {}",
+                    condition, if_true, if_false,
+                )
+            },
+            Self::Block(expressions) => {
+                format!(
+                    "{{ {} }}",
+                    expressions
+                        .iter()
+                        .map(|expression| expression.to_string() + ";")
+                        .collect::<Vec<String>>()
+                        .join("\n")
+                )
+            }
+            Self::StringValue(value) => format!("\"{}\"", value),
+            Self::BooleanValue(value) => value.to_string(),
+            Self::Identifier(name) => name.clone(),
+            Self::Fn(argument_names, body) => {
+                let argument_names_str = format!(
+                    "{}",
+                    argument_names
+                        .iter()
+                        .map(|name| name.to_string())
+                        .collect::<Vec<String>>()
+                        .join(", ")
+                );
+
+                format!("fn ({}) {}", argument_names_str, body)
+            },
+            Self::LetBinding(variable, value) => {
+                format!("let {} = {}", variable, value)
+            },
+            Self::FnCall(name, arguments) => {
+                format!(
+                    "{}({})",
+                    name,
+                    arguments
+                        .iter()
+                        .map(|name| name.to_string())
+                        .collect::<Vec<String>>()
+                        .join(", ")
+                )
+            },
+            Self::Null => "<null>".to_string(),
+            Self::EndOfProgram => "<end of program>".to_string(),
+        };
+
+        write!(f, "{}", expr_as_str)
+    }
+}
+
 pub struct EvaluationScope {
     variables: HashMap<String, Expression>,
 }
@@ -41,29 +118,28 @@ impl Expression {
     pub fn integer_value(&self) -> Result<u64, Box<dyn std::error::Error>> {
         match &self {
             Self::IntegerValue(n) => Ok(*n),
-            //.. todo: add Display trait to Expression
-            _ => Err(format!("expected integer, got `{:#?}`", self).into()),
+            _ => Err(format!("expected integer, got `{}`", self).into()),
         }
     }
 
     pub fn string_value(&self) -> Result<String, Box<dyn std::error::Error>> {
         match &self {
             Self::StringValue(n) => Ok(n.clone()),
-            _ => Err(format!("expected string, got `{:#?}`", self).into()),
+            _ => Err(format!("expected string, got `{}`", self).into()),
         }
     }
 
     pub fn boolean_value(&self) -> Result<bool, Box<dyn std::error::Error>> {
         match &self {
             Self::BooleanValue(n) => Ok(*n),
-            _ => Err(format!("expected boolean, got `{:#?}`", self).into()),
+            _ => Err(format!("expected boolean, got `{}`", self).into()),
         }
     }
 
     pub fn identifier_name(&self) -> Result<String, Box<dyn std::error::Error>> {
         match &self {
             Self::Identifier(name) => Ok(name.clone()),
-            _ => Err(format!("expected identifier, got `{:#?}`", self).into()),
+            _ => Err(format!("expected identifier, got `{}`", self).into()),
         }
     }
 
@@ -129,7 +205,7 @@ impl Expression {
                 body.clone().evaluate(ctx.clone())
             },
             Some(other) => {
-                return Err(format!("trying to call `{:#?}`, which is not a function", other).into());
+                return Err(format!("trying to call `{}`, which is not a function", other).into());
             },
             None => {
                 return Err(format!("unknown identifier `{}`", name).into());

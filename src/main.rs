@@ -24,10 +24,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .to_string()
     );
     println!(
-        "{:#?}",
+        "{}",
         parser
             .parse_program()?
-            .evaluate(ctx.clone())?
+            //.evaluate(ctx.clone())?
         );
 
     Ok(())
