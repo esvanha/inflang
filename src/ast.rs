@@ -12,11 +12,11 @@ pub enum Expression {
     //.. IfExpression: condition, expression when true, expression when false
     IfExpression(Box<Expression>, Box<Expression>, Box<Expression>),
     //.. Fn: argument names, function body
-    Fn(Vec<Expression>, Box<Expression>),
+    Fn(Vec<String>, Box<Expression>),
     //.. LetBinding: variable name, value
     LetBinding(String, Box<Expression>),
     //.. FnCall: function, arguments
-    FnCall(Box<Expression>, Vec<Expression>),
+    FnCall(String, Vec<Expression>),
     Block(Vec<Expression>),
     Program(Vec<Expression>),
     Null,
@@ -105,25 +105,25 @@ impl Expression {
         Ok(Expression::List(result_list))
     }
 
-    fn evaluate_fn_call(&self, ctx: SharedContext, name: &Expression, argument_values: &Vec<Expression>) -> Result<Expression, Box<dyn std::error::Error>> {
+    fn evaluate_fn_call(&self, ctx: SharedContext, name: &String, argument_values: &Vec<Expression>) -> Result<Expression, Box<dyn std::error::Error>> {
         let variables = ctx.borrow_mut().variables.clone();
-        let function_name_str = name.clone().identifier_name()?;
-        let function = variables.get(&function_name_str);
+        let function = variables.get(name);
 
         match function {
             Some(Self::Fn(argument_names, body)) => {
                 if argument_values.len() != argument_names.len() {
                     return Err(format!(
                         "function `{}` expected {} arguments, got {} instead",
-                        function_name_str, argument_names.len(), argument_values.len(),
+                        name, argument_names.len(), argument_values.len(),
                     ).into())
                 }
 
                 for i in 0..argument_names.len() {
-                    let name = argument_names[i].identifier_name()?;
                     let value = argument_values[i].clone().evaluate(ctx.clone())?.clone();
 
-                    ctx.borrow_mut().variables.insert(name, value);
+                    ctx.borrow_mut().variables.insert(
+                        argument_names[i].clone(), value
+                    );
                 }
 
                 body.clone().evaluate(ctx.clone())
@@ -132,7 +132,7 @@ impl Expression {
                 return Err(format!("trying to call `{:#?}`, which is not a function", other).into());
             },
             None => {
-                return Err(format!("unknown identifier `{}`", function_name_str).into());
+                return Err(format!("unknown identifier `{}`", name).into());
             }
         }
     }

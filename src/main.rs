@@ -1,7 +1,6 @@
 mod lexer;
 mod parser;
 mod ast;
-use crate::lexer::{Lexer, TokenType};
 use crate::parser::Parser;
 
 use std::rc::Rc;

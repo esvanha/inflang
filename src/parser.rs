@@ -120,7 +120,7 @@ impl Parser {
             }
 
             let argument_name = self.expect(lexer::TokenType::Identifier)?;
-            argument_names.push(ast::Expression::Identifier(argument_name.value));
+            argument_names.push(argument_name.value);
             
             was_separated = self.accept(lexer::TokenType::Comma)?.is_some();
         }
@@ -150,10 +150,7 @@ impl Parser {
             was_separated = self.accept(lexer::TokenType::Comma)?.is_some();
         }
 
-        Ok(ast::Expression::FnCall(
-            Box::new(ast::Expression::Identifier(function_name)),
-            arguments
-        ))
+        Ok(ast::Expression::FnCall(function_name, arguments))
     }
 
     fn parse_list(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
