@@ -1,6 +1,13 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
+use crate::builtin_functions;
+
+type BuiltInFnClosure = Rc<
+    dyn Fn(
+        SharedContext, Vec<Expression>
+    ) -> Result<Expression, Box<dyn std::error::Error>>
+>;
 
 #[derive(Clone)]
 pub enum Expression {
@@ -19,6 +26,8 @@ pub enum Expression {
     FnCall(String, Vec<Expression>),
     Block(Vec<Expression>),
     Program(Vec<Expression>),
+    //.. BuiltInFn: argument length, function
+    BuiltInFn(u8, BuiltInFnClosure),
     Null,
     EndOfProgram
 }
@@ -94,6 +103,7 @@ impl std::fmt::Display for Expression {
             },
             Self::Null => "<null>".to_string(),
             Self::EndOfProgram => "<end of program>".to_string(),
+            Self::BuiltInFn(_, _) => "<built-in function>".to_string()
         };
 
         write!(f, "{}", expr_as_str)
@@ -107,7 +117,7 @@ pub struct EvaluationScope {
 impl EvaluationScope {
     pub fn new() -> Self {
         Self {
-            variables: HashMap::new(),
+            variables: builtin_functions::builtin_functions(),
         }
     }
 }
@@ -204,6 +214,23 @@ impl Expression {
 
                 body.clone().evaluate(ctx.clone())
             },
+
+            Some(Self::BuiltInFn(argument_length, function)) => {
+                if argument_values.len() != (*argument_length as usize) {
+                    return Err(format!(
+                        "function `{}` expected {} arguments, got {} instead",
+                        name, argument_length, argument_values.len(),
+                    ).into());
+                }
+
+                let mut evaluated_arguments = Vec::new();
+                for argument in argument_values {
+                    evaluated_arguments.push(argument.clone().evaluate(ctx.clone())?);
+                }
+
+                function(ctx.clone(), evaluated_arguments)
+            }
+
             Some(other) => {
                 return Err(format!("trying to call `{}`, which is not a function", other).into());
             },
@@ -221,6 +248,7 @@ impl Expression {
             Self::Null => self,
             Self::EndOfProgram => self,
             Self::Fn(_, _) => self,
+            Self::BuiltInFn(_, _) => self,
 
             Self::Identifier(identifier) => {
                 self.evaluate_identifier(ctx.clone(), identifier)?

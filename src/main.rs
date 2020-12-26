@@ -1,6 +1,8 @@
 mod lexer;
 mod parser;
 mod ast;
+mod builtin_functions;
+
 use crate::parser::Parser;
 
 use std::rc::Rc;
@@ -10,25 +12,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ctx = Rc::new(RefCell::new(ast::EvaluationScope::new()));
 
     let mut parser = Parser::new("
-        let bool_to_str = fn (x) {
-            if x {
-                \"true\";
-            } else {
-                \"false\";
-            };
-        };
-        
-        bool_to_str(true);
-        bool_to_str(false);
+        print_line(\"What is your name?\");
+
+        let name = get_input_line();
+
+        print_line(join_str(\"Hello, \", name));
         "
         .to_string()
     );
-    println!(
-        "{}",
-        parser
-            .parse_program()?
-            //.evaluate(ctx.clone())?
-        );
+
+    parser
+        .parse_program()?
+        .evaluate(ctx.clone())?;
 
     Ok(())
 }
