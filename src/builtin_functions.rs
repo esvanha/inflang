@@ -2,10 +2,6 @@ use crate::ast::Expression;
 
 use std::rc::Rc;
 use std::collections::HashMap;
-use std::io;
-use std::io::*;
-
-
 
 pub fn builtin_functions() -> HashMap<String, Expression> {
     let mut function_map = HashMap::new();
@@ -75,6 +71,60 @@ pub fn builtin_functions() -> HashMap<String, Expression> {
     )));
 
     function_map.insert(
+        "<".to_string(),
+        Expression::BuiltInFn(2, Rc::new(|ctx, items| {
+            let a = items[0].clone().integer_value()?;
+            let b = items[1].clone().integer_value()?;
+
+            Ok(Expression::BooleanValue(a < b))
+        }
+    )));
+
+    function_map.insert(
+        ">".to_string(),
+        Expression::BuiltInFn(2, Rc::new(|ctx, items| {
+            let a = items[0].clone().integer_value()?;
+            let b = items[1].clone().integer_value()?;
+
+            Ok(Expression::BooleanValue(a > b))
+        }
+    )));
+
+    function_map.insert(
+        "eq".to_string(),
+        Expression::BuiltInFn(2, Rc::new(|ctx, items| {
+            Ok(Expression::BooleanValue(items[0] == items[1]))
+        }
+    )));
+
+    function_map.insert(
+        "not".to_string(),
+        Expression::BuiltInFn(1, Rc::new(|ctx, items| {
+            let a = items[0].boolean_value()?;
+            Ok(Expression::BooleanValue(!a))
+        }
+    )));
+
+    function_map.insert(
+        "mod".to_string(),
+        Expression::BuiltInFn(2, Rc::new(|ctx, items| {
+            let a = items[0].clone().integer_value()?;
+            let b = items[1].clone().integer_value()?;
+
+            Ok(Expression::IntegerValue(a % b))
+        }
+    )));
+
+    function_map.insert(
+        "sqrt".to_string(),
+        Expression::BuiltInFn(1, Rc::new(|ctx, items| {
+            let a = items[0].clone().integer_value()?;
+
+            Ok(Expression::IntegerValue((a as f64).sqrt() as u64))
+        }
+    )));
+
+    function_map.insert(
         "get_input_line".to_string(),
         Expression::BuiltInFn(0, Rc::new(|ctx, items| {
             let mut input = String::new();
@@ -98,6 +148,15 @@ pub fn builtin_functions() -> HashMap<String, Expression> {
             let b = items[1].clone().string_value()?;
 
             Ok(Expression::StringValue(a + &b))
+        }
+    )));
+
+    function_map.insert(
+        "str_to_int".to_string(),
+        Expression::BuiltInFn(1, Rc::new(|ctx, items| {
+            let a = items[0].clone().string_value()?;
+
+            Ok(Expression::IntegerValue(a.parse()?))
         }
     )));
 

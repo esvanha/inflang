@@ -34,6 +34,19 @@ pub enum Expression {
     EndOfProgram
 }
 
+impl PartialEq for Expression {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::List(a), Self::List(b)) => a == b,
+            (Self::StringValue(a), Self::StringValue(b)) => a == b,
+            (Self::IntegerValue(a), Self::IntegerValue(b)) => a == b,
+            (Self::BooleanValue(a), Self::BooleanValue(b)) => a == b,
+            (Self::Identifier(a), Self::Identifier(b)) => a == b,
+            _ => false,
+        }
+    }
+}
+
 impl std::fmt::Display for Expression {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let expr_as_str = match self {
