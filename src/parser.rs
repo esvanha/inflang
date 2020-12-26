@@ -86,7 +86,8 @@ impl Parser {
     }
 
     fn parse_if_expression(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
-        //.. if <block> else <block>
+        //.. if <condition> <block> else <block>
+
         self.expect(lexer::TokenType::If)?;
 
         let condition = self.parse_expression()?;
@@ -102,6 +103,18 @@ impl Parser {
             Box::new(when_true_block),
             Box::new(when_false_block),
         ))
+    }
+
+    fn parse_while(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
+        //.. while <condition> <block>
+
+        self.expect(lexer::TokenType::While)?;
+
+        let condition = self.parse_expression()?;
+
+        let body = self.parse_block()?;
+
+        Ok(ast::Expression::While(Box::new(condition), Box::new(body)))
     }
 
     fn parse_fn_declaration(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
@@ -210,7 +223,12 @@ impl Parser {
                     .or(Ok(
                         ast::Expression::Identifier(identifier)
                     ))
-            }
+            },
+
+            lexer::Token {
+                token_type: lexer::TokenType::While,
+                value: _,
+            } => self.parse_while(),
 
             lexer::Token {
                 token_type: lexer::TokenType::Integer,

@@ -21,6 +21,7 @@ pub enum TokenType {
     Semicolon,          //.. ;
     StringLiteral,      //.. "*"
     True,               //.. true
+    While,              //.. while
 }
 
 impl std::fmt::Display for TokenType {
@@ -45,6 +46,7 @@ impl std::fmt::Display for TokenType {
             TokenType::Semicolon            => ";",
             TokenType::StringLiteral        => "string literal",
             TokenType::True                 => "true",
+            TokenType::While                => "while"
         };
 
         write!(f, "{}", token_type_as_str)
@@ -225,6 +227,7 @@ impl Lexer {
             "true"  => Token { token_type: TokenType::True, value: String::new() },
             "false" => Token { token_type: TokenType::False, value: String::new() },
             "fn"    => Token { token_type: TokenType::Fn, value: String::new() },
+            "while" => Token { token_type: TokenType::While, value: String::new() },
             _       => Token { token_type: TokenType::Identifier, value: keyword_or_identifier }
         })
     }

@@ -18,6 +18,8 @@ pub enum Expression {
     Identifier(String),
     //.. IfExpression: condition, expression when true, expression when false
     IfExpression(Box<Expression>, Box<Expression>, Box<Expression>),
+    //.. While: condition, body
+    While(Box<Expression>, Box<Expression>),
     //.. Fn: argument names, function body
     Fn(Vec<String>, Box<Expression>),
     //.. LetBinding: variable name, value
@@ -89,6 +91,9 @@ impl std::fmt::Display for Expression {
             },
             Self::LetBinding(variable, value) => {
                 format!("let {} = {}", variable, value)
+            },
+            Self::While(condition, body) => {
+                format!("while {} {}", condition, body)
             },
             Self::FnCall(name, arguments) => {
                 format!(
@@ -240,6 +245,16 @@ impl Expression {
         }
     }
 
+    pub fn evaluate_while(&self, ctx: SharedContext, condition: &Expression, body: &Expression) -> Result<Expression, Box<dyn std::error::Error>> {
+        let mut result = Expression::Null;
+
+        while condition.clone().evaluate(ctx.clone())?.boolean_value()? {
+            result = body.clone().evaluate(ctx.clone())?;
+        }
+
+        Ok(result)
+    }
+
     pub fn evaluate(self, ctx: SharedContext) -> Result<Expression, Box<dyn std::error::Error>> {
         Ok(match &self {
             Self::BooleanValue(_) => self,
@@ -264,6 +279,9 @@ impl Expression {
             },
             Self::FnCall(function_name, argument_values) => {
                 self.evaluate_fn_call(ctx.clone(), function_name, argument_values)?
+            },
+            Self::While(condition, body) => {
+                self.evaluate_while(ctx.clone(), condition, body)?
             },
 
             Self::IfExpression(condition, if_block, else_block) => {
