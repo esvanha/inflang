@@ -35,6 +35,8 @@ impl EvaluationScope {
     }
 }
 
+type SharedContext = Rc<RefCell<EvaluationScope>>;
+
 impl Expression {
     pub fn integer_value(&self) -> Result<u64, Box<dyn std::error::Error>> {
         match &self {
@@ -65,7 +67,77 @@ impl Expression {
         }
     }
 
-    pub fn evaluate(self, ctx: Rc<RefCell<EvaluationScope>>) -> Result<Expression, Box<dyn std::error::Error>> {
+    fn evaluate_identifier(&self, ctx: SharedContext, identifier: &String) -> Result<Expression, Box<dyn std::error::Error>> {
+        match ctx.borrow().variables.get(identifier) {
+            Some(value) => Ok(value.clone()),
+            None => Err(format!("unknown identifier `{}`", identifier).into()),
+        }
+    }
+
+    fn evaluate_block(&self, ctx: SharedContext, block_body: &Vec<Expression>) -> Result<Expression, Box<dyn std::error::Error>> {
+        let mut return_value = Self::Null;
+
+        for expression in block_body.iter() {
+            return_value = expression.clone().evaluate(ctx.clone())?;
+        }
+
+        Ok(return_value)
+    }
+
+    fn evaluate_let_binding(&self, ctx: SharedContext, variable_name: &String, value: &Expression) -> Result<Expression, Box<dyn std::error::Error>> {
+        let evaluated_value = value.clone().evaluate(ctx.clone())?;
+                
+        ctx.borrow_mut().variables.insert(
+            variable_name.clone(),
+            evaluated_value.clone()
+        );
+
+        Ok(evaluated_value)
+    }
+
+    fn evaluate_list(&self, ctx: SharedContext, expressions: &Vec<Expression>) -> Result<Expression, Box<dyn std::error::Error>> {
+        let mut result_list = Vec::new();
+
+        for expression in expressions {
+            result_list.push(expression.clone().evaluate(ctx.clone())?);
+        }
+
+        Ok(Expression::List(result_list))
+    }
+
+    fn evaluate_fn_call(&self, ctx: SharedContext, name: &Expression, argument_values: &Vec<Expression>) -> Result<Expression, Box<dyn std::error::Error>> {
+        let variables = ctx.borrow_mut().variables.clone();
+        let function_name_str = name.clone().identifier_name()?;
+        let function = variables.get(&function_name_str);
+
+        match function {
+            Some(Self::Fn(argument_names, body)) => {
+                if argument_values.len() != argument_names.len() {
+                    return Err(format!(
+                        "function `{}` expected {} arguments, got {} instead",
+                        function_name_str, argument_names.len(), argument_values.len(),
+                    ).into())
+                }
+
+                for i in 0..argument_names.len() {
+                    let name = argument_names[i].identifier_name()?;
+                    let value = argument_values[i].clone().evaluate(ctx.clone())?.clone();
+
+                    ctx.borrow_mut().variables.insert(name, value);
+                }
+
+                body.clone().evaluate(ctx.clone())
+            },
+            Some(other) => {
+                return Err(format!("trying to call `{:#?}`, which is not a function", other).into());
+            },
+            None => {
+                return Err(format!("unknown identifier `{}`", function_name_str).into());
+            }
+        }
+    }
+
+    pub fn evaluate(self, ctx: SharedContext) -> Result<Expression, Box<dyn std::error::Error>> {
         Ok(match &self {
             Self::BooleanValue(_) => self,
             Self::IntegerValue(_) => self,
@@ -75,20 +147,19 @@ impl Expression {
             Self::Fn(_, _) => self,
 
             Self::Identifier(identifier) => {
-                match ctx.borrow().variables.get(identifier) {
-                    Some(value) => value.clone(),
-                    None => return Err(format!("unknown identifier `{}`", identifier).into()),
-                }
+                self.evaluate_identifier(ctx.clone(), identifier)?
             },
-
             Self::Block(expressions) => {
-                let mut return_value = Self::Null;
-
-                for expression in expressions.iter() {
-                    return_value = expression.clone().evaluate(ctx.clone())?;
-                }
-
-                return_value
+                self.evaluate_block(ctx.clone(), expressions)?
+            },
+            Self::List(expressions) => {
+                self.evaluate_list(ctx.clone(), expressions)?
+            },
+            Self::LetBinding(variable_name, value) => {
+                self.evaluate_let_binding(ctx.clone(), variable_name, value)?
+            },
+            Self::FnCall(function_name, argument_values) => {
+                self.evaluate_fn_call(ctx.clone(), function_name, argument_values)?
             },
 
             Self::IfExpression(condition, if_block, else_block) => {
@@ -96,59 +167,6 @@ impl Expression {
                     if_block.clone().evaluate(ctx.clone())?
                 } else {
                     else_block.clone().evaluate(ctx.clone())?
-                }
-            },
-
-            Self::List(expressions) => {
-                let mut result_list = Vec::new();
-
-                for expression in expressions {
-                    result_list.push(expression.clone().evaluate(ctx.clone())?);
-                }
-
-                Expression::List(result_list)
-            },
-
-            Self::LetBinding(variable_name, value) => {
-                let evaluated_value = value.clone().evaluate(ctx.clone())?;
-                
-                ctx.borrow_mut().variables.insert(
-                    variable_name.clone(),
-                    evaluated_value.clone()
-                );
-
-                evaluated_value
-            }
-
-            Self::FnCall(function_name, argument_values) => {
-                let variables = ctx.borrow_mut().variables.clone();
-                let function_name_str = function_name.clone().identifier_name()?;
-                let function = variables.get(&function_name_str);
-
-                match function {
-                    Some(Self::Fn(argument_names, body)) => {
-                        if argument_values.len() != argument_names.len() {
-                            return Err(format!(
-                                "function `{}` expected {} arguments, got {} instead",
-                                function_name_str, argument_names.len(), argument_values.len(),
-                            ).into())
-                        }
-
-                        for i in 0..argument_names.len() {
-                            let name = argument_names[i].identifier_name()?;
-                            let value = argument_values[i].clone().evaluate(ctx.clone())?.clone();
-
-                            ctx.borrow_mut().variables.insert(name, value);
-                        }
-
-                        body.clone().evaluate(ctx.clone())?
-                    },
-                    Some(other) => {
-                        return Err(format!("trying to call `{:#?}`, which is not a function", other).into());
-                    },
-                    None => {
-                        return Err(format!("unknown identifier `{}`", function_name_str).into());
-                    }
                 }
             },
             
