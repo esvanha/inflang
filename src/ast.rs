@@ -128,19 +128,66 @@ impl std::fmt::Display for Expression {
     }
 }
 
-pub struct EvaluationScope {
+struct EvaluationScope {
     variables: HashMap<String, Expression>,
 }
 
 impl EvaluationScope {
-    pub fn new() -> Self {
+    pub fn new_default() -> Self {
         Self {
             variables: builtin_functions::builtin_functions(),
         }
     }
+
+    pub fn new_empty() -> Self {
+        Self {
+            variables: HashMap::new(),
+        }
+    }
 }
 
-type SharedContext = Rc<RefCell<EvaluationScope>>;
+pub struct EvaluationContext {
+    scopes: Vec<EvaluationScope>,
+}
+
+impl EvaluationContext {
+    pub fn new() -> Self {
+        Self {
+            scopes: vec![EvaluationScope::new_default()],
+        }
+    }
+
+    pub fn enter_scope(&mut self) {
+        self.scopes.push(EvaluationScope::new_empty());
+    }
+
+    pub fn exit_scope(&mut self) {
+        if self.scopes.len() > 1 {
+            self.scopes.pop();
+        }
+    }
+
+    pub fn resolve_var(&self, var_name: String) -> Option<Expression> {
+        for scope in self.scopes.iter().rev() {
+            match scope.variables.get(&var_name) {
+                Some(var) => return Some(var.clone()),
+                None => (),
+            };
+        }
+
+        None
+    }
+
+    fn outer_scope(&mut self) -> &mut EvaluationScope {
+        self.scopes.iter_mut().rev().nth(1).unwrap()
+    }
+
+    pub fn add_local_var(&mut self, var_name: String, value: Expression) {
+        self.outer_scope().variables.insert(var_name, value);
+    }
+}
+
+type SharedContext = Rc<RefCell<EvaluationContext>>;
 
 impl Expression {
     pub fn integer_value(&self) -> Result<u64, Box<dyn std::error::Error>> {
@@ -171,10 +218,10 @@ impl Expression {
         }
     }
 
-    fn evaluate_identifier(&self, ctx: SharedContext, identifier: &String) -> Result<Expression, Box<dyn std::error::Error>> {
-        match ctx.borrow().variables.get(identifier) {
+    fn evaluate_identifier(&self, ctx: SharedContext, identifier: String) -> Result<Expression, Box<dyn std::error::Error>> {
+        match ctx.borrow().resolve_var(identifier.clone()) {
             Some(value) => Ok(value.clone()),
-            None => Err(format!("unknown identifier `{}`", identifier).into()),
+            None => Err(format!("unknown identifier `{}`", identifier.clone()).into()),
         }
     }
 
@@ -191,7 +238,7 @@ impl Expression {
     fn evaluate_let_binding(&self, ctx: SharedContext, variable_name: &String, value: &Expression) -> Result<Expression, Box<dyn std::error::Error>> {
         let evaluated_value = value.clone().evaluate(ctx.clone())?;
                 
-        ctx.borrow_mut().variables.insert(
+        ctx.borrow_mut().add_local_var(
             variable_name.clone(),
             evaluated_value.clone()
         );
@@ -209,9 +256,8 @@ impl Expression {
         Ok(Expression::List(result_list))
     }
 
-    fn evaluate_fn_call(&self, ctx: SharedContext, name: &String, argument_values: &Vec<Expression>) -> Result<Expression, Box<dyn std::error::Error>> {
-        let variables = ctx.borrow_mut().variables.clone();
-        let function = variables.get(name);
+    fn evaluate_fn_call(&self, ctx: SharedContext, name: String, argument_values: &Vec<Expression>) -> Result<Expression, Box<dyn std::error::Error>> {
+        let function = ctx.borrow_mut().resolve_var(name.clone());
 
         match function {
             Some(Self::Fn(argument_names, body)) => {
@@ -225,7 +271,7 @@ impl Expression {
                 for i in 0..argument_names.len() {
                     let value = argument_values[i].clone().evaluate(ctx.clone())?.clone();
 
-                    ctx.borrow_mut().variables.insert(
+                    ctx.borrow_mut().add_local_var(
                         argument_names[i].clone(), value
                     );
                 }
@@ -234,10 +280,10 @@ impl Expression {
             },
 
             Some(Self::BuiltInFn(argument_length, function)) => {
-                if argument_values.len() != (*argument_length as usize) {
+                if argument_values.len() != (argument_length as usize) {
                     return Err(format!(
                         "function `{}` expected {} arguments, got {} instead",
-                        name, argument_length, argument_values.len(),
+                        name.clone(), argument_length, argument_values.len(),
                     ).into());
                 }
 
@@ -269,7 +315,10 @@ impl Expression {
     }
 
     pub fn evaluate(self, ctx: SharedContext) -> Result<Expression, Box<dyn std::error::Error>> {
-        Ok(match &self {
+        ctx.borrow_mut().enter_scope();
+        
+        
+        let result = match &self {
             Self::BooleanValue(_) => self,
             Self::IntegerValue(_) => self,
             Self::StringValue(_) => self,
@@ -279,7 +328,7 @@ impl Expression {
             Self::BuiltInFn(_, _) => self,
 
             Self::Identifier(identifier) => {
-                self.evaluate_identifier(ctx.clone(), identifier)?
+                self.evaluate_identifier(ctx.clone(), identifier.clone())?
             },
             Self::Block(expressions) => {
                 self.evaluate_block(ctx.clone(), expressions)?
@@ -291,7 +340,7 @@ impl Expression {
                 self.evaluate_let_binding(ctx.clone(), variable_name, value)?
             },
             Self::FnCall(function_name, argument_values) => {
-                self.evaluate_fn_call(ctx.clone(), function_name, argument_values)?
+                self.evaluate_fn_call(ctx.clone(), function_name.clone(), argument_values)?
             },
             Self::While(condition, body) => {
                 self.evaluate_while(ctx.clone(), condition, body)?
@@ -312,6 +361,10 @@ impl Expression {
 
                 Expression::EndOfProgram
             },
-        })
+        };
+
+        ctx.borrow_mut().exit_scope();
+
+        Ok(result)
     }
 }
