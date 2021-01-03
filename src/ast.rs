@@ -42,6 +42,7 @@ impl PartialEq for Expression {
             (Self::IntegerValue(a), Self::IntegerValue(b)) => a == b,
             (Self::BooleanValue(a), Self::BooleanValue(b)) => a == b,
             (Self::Identifier(a), Self::Identifier(b)) => a == b,
+            (Self::Null, Self::Null) => true,
             _ => false,
         }
     }
