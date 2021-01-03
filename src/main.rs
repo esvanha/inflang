@@ -11,69 +11,7 @@ use std::cell::RefCell;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ctx = Rc::new(RefCell::new(ast::EvaluationContext::new()));
 
-    let mut parser = Parser::new("
-        %
-        % Example program demonstrating the basics of inflang.
-        %
-
-        let inc = fn (n) {
-            +(n, 1);
-        };
-
-        % Prime check function
-        let is_prime = fn (x) {
-            if <(x, 3) {
-                eq(x, 2);
-            } else {
-                let i = 2;
-                let sqrt_x = sqrt(x);
-                let stop = false;
-                let result = true;
-                
-                while not(stop) {
-                    if eq(mod(x, i), 0) {
-                        let stop = true;
-                        let result = false;
-                    } else {
-                        let i = inc(i);
-                        let stop = >(i, sqrt_x);
-                    };
-                };
-
-                result;
-            };
-        };
-
-        % Recursive version of same prime check
-        let rec_is_prime = fn (x, i) {
-            if <(x, 3) {
-                eq(x, 2);
-            } else {
-                if eq(mod(x, i), 0) {
-                    false;
-                } else {
-                    if >(*(i, i), x) {
-                        true;
-                    } else {
-                        rec_is_prime(x, inc(i));
-                    };
-                };
-            };
-        };
-
-        print_line(\"Prime Number Test\");
-        print_line(\"What number do you want to test?\");
-
-        let number = str_to_int(get_input_line());
-
-        if rec_is_prime(number, 2) {
-            print_line(\"This is a prime number!\");
-        } else {
-            print_line(\"This is not a prime number!\");
-        };
-        "
-        .to_string()
-    );
+    let mut parser = Parser::from_file("src/example.inf".to_string())?;
 
     parser
         .parse_program()?

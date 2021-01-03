@@ -1,5 +1,7 @@
 use crate::lexer;
 use crate::ast;
+use std::fs::File;
+use std::io::prelude::*;
 
 pub struct Parser {
     lexer: lexer::Lexer,
@@ -12,6 +14,14 @@ impl Parser {
             lexer: lexer::Lexer::new(input),
             lexed_tokens: Vec::new(),
         }
+    }
+
+    pub fn from_file(path: String) -> Result<Self, Box<dyn std::error::Error>> {
+        let mut file = File::open(path)?;
+        let mut program_source = String::new();
+        file.read_to_string(&mut program_source)?;
+        
+        Ok(Self::new(program_source))
     }
 
     fn peek_token(&mut self) -> Result<lexer::Token, Box<dyn std::error::Error>> {
