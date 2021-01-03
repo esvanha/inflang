@@ -306,9 +306,17 @@ impl Lexer {
         };
 
         self.skip_whitespace();
-        //.. todo: allow comments
 
         match self.peek_one() {
+            Some('%')       => {
+                loop {
+                    let next_char = self.take_one();
+                    if next_char == Some('\n') || next_char == None {
+                        break
+                    }
+                }
+                self.next_token()
+            },
             Some('(')       => consume_and_return(self, TokenType::LParen),
             Some(')')       => consume_and_return(self, TokenType::RParen),
             Some(';')       => consume_and_return(self, TokenType::Semicolon),

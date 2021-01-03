@@ -12,10 +12,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ctx = Rc::new(RefCell::new(ast::EvaluationContext::new()));
 
     let mut parser = Parser::new("
+        %
+        % Example program demonstrating the basics of inflang.
+        %
+
         let inc = fn (n) {
             +(n, 1);
         };
 
+        % Prime check function
         let is_prime = fn (x) {
             if <(x, 3) {
                 eq(x, 2);
@@ -39,6 +44,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
         };
 
+        % Recursive version of same prime check
         let rec_is_prime = fn (x, i) {
             if <(x, 3) {
                 eq(x, 2);
