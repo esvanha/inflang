@@ -25,7 +25,7 @@ pub enum Expression {
     //.. LetBinding: variable name, value
     LetBinding(String, Box<Expression>),
     //.. FnCall: function, arguments
-    FnCall(String, Vec<Expression>),
+    FnCall(Box<Expression>, Vec<Expression>),
     Block(Vec<Expression>),
     Program(Vec<Expression>),
     //.. BuiltInFn: argument length, function
@@ -257,15 +257,15 @@ impl Expression {
         Ok(Expression::List(result_list))
     }
 
-    fn evaluate_fn_call(&self, ctx: SharedContext, name: String, argument_values: &Vec<Expression>) -> Result<Expression, Box<dyn std::error::Error>> {
-        let function = ctx.borrow_mut().resolve_var(name.clone());
+    fn evaluate_fn_call(&self, ctx: SharedContext, function: Box<Expression>, argument_values: &Vec<Expression>) -> Result<Expression, Box<dyn std::error::Error>> {
+        // todo; either name function 'anonymous' or give it the identifier name in the error message
 
-        match function {
-            Some(Self::Fn(argument_names, body)) => {
+        match function.evaluate(ctx.clone())? {
+            Self::Fn(argument_names, body) => {
                 if argument_values.len() != argument_names.len() {
                     return Err(format!(
-                        "function `{}` expected {} arguments, got {} instead",
-                        name, argument_names.len(), argument_values.len(),
+                        "function expected {} arguments, got {} instead",
+                        argument_names.len(), argument_values.len(),
                     ).into())
                 }
 
@@ -280,11 +280,11 @@ impl Expression {
                 body.clone().evaluate(ctx.clone())
             },
 
-            Some(Self::BuiltInFn(argument_length, function)) => {
+            Self::BuiltInFn(argument_length, function) => {
                 if argument_values.len() != (argument_length as usize) {
                     return Err(format!(
-                        "function `{}` expected {} arguments, got {} instead",
-                        name.clone(), argument_length, argument_values.len(),
+                        "function expected {} arguments, got {} instead",
+                        argument_length, argument_values.len(),
                     ).into());
                 }
 
@@ -296,12 +296,9 @@ impl Expression {
                 function(ctx.clone(), evaluated_arguments)
             }
 
-            Some(other) => {
+            other => {
                 return Err(format!("trying to call `{}`, which is not a function", other).into());
             },
-            None => {
-                return Err(format!("unknown identifier `{}`", name).into());
-            }
         }
     }
 

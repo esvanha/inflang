@@ -173,10 +173,8 @@ impl Parser {
         Ok(last_fn)
     }
 
-    fn parse_fn_call(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
-        //.. <identifier>(<arguments, separated by `,`>)
-
-        let function_name = self.expect(lexer::TokenType::Identifier)?.value;
+    fn parse_fn_call(&mut self, expr: ast::Expression) -> Result<ast::Expression, Box<dyn std::error::Error>> {
+        //.. <expr>(<arguments, separated by `,`>)
 
         self.expect(lexer::TokenType::LParen)?;
 
@@ -193,7 +191,7 @@ impl Parser {
             was_separated = self.accept(lexer::TokenType::Comma)?.is_some();
         }
 
-        Ok(ast::Expression::FnCall(function_name, arguments))
+        Ok(ast::Expression::FnCall(Box::new(expr), arguments))
     }
 
     fn parse_list(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
@@ -229,7 +227,7 @@ impl Parser {
     }
  
     pub fn parse_expression(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
-        match self.peek_token()? {
+        let mut expr = match self.peek_token()? {
             lexer::Token {
                 token_type: lexer::TokenType::Let,
                 value: _,
@@ -249,10 +247,12 @@ impl Parser {
                 token_type: lexer::TokenType::Identifier,
                 value: identifier,
             } => {
-                self.parse_fn_call()
+                /*self.parse_fn_call()
                     .or(Ok(
                         ast::Expression::Identifier(identifier)
-                    ))
+                    ))*/
+                self.consume_token();
+                Ok(ast::Expression::Identifier(identifier))
             },
 
             lexer::Token {
@@ -308,6 +308,15 @@ impl Parser {
                     misc_token
                 ).into());
             }
+        }?;
+
+        //.. A function call can return a function so an expression may contain
+        //   multiple function calls after each other, e.g.:
+        //   "fn (x, y) { +(x, y); }(2)(3)"
+        while self.peek_token()?.token_type == lexer::TokenType::LParen {
+            expr = self.parse_fn_call(expr)?;
         }
+
+        Ok(expr)
     }
 }
