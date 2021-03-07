@@ -258,14 +258,14 @@ impl Expression {
     }
 
     fn evaluate_fn_call(&self, ctx: SharedContext, function: Box<Expression>, argument_values: &Vec<Expression>) -> Result<Expression, Box<dyn std::error::Error>> {
-        // todo; either name function 'anonymous' or give it the identifier name in the error message
+        let function_name = function.identifier_name().unwrap_or("<anonymous>".to_string());
 
         match function.evaluate(ctx.clone())? {
             Self::Fn(argument_names, body) => {
                 if argument_values.len() != argument_names.len() {
                     return Err(format!(
-                        "function expected {} arguments, got {} instead",
-                        argument_names.len(), argument_values.len(),
+                        "function `{}` expected {} arguments, got {} instead",
+                        function_name, argument_names.len(), argument_values.len(),
                     ).into())
                 }
 
@@ -283,8 +283,8 @@ impl Expression {
             Self::BuiltInFn(argument_length, function) => {
                 if argument_values.len() != (argument_length as usize) {
                     return Err(format!(
-                        "function expected {} arguments, got {} instead",
-                        argument_length, argument_values.len(),
+                        "function `{}` expected {} arguments, got {} instead",
+                        function_name, argument_length, argument_values.len(),
                     ).into());
                 }
 
