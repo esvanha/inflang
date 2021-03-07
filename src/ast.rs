@@ -219,6 +219,13 @@ impl Expression {
         }
     }
 
+    pub fn is_null(&self) -> bool {
+        match &self {
+            Self::Null => true,
+            _ => false
+        }
+    }
+
     fn evaluate_identifier(&self, ctx: SharedContext, identifier: String) -> Result<Expression, Box<dyn std::error::Error>> {
         match ctx.borrow().resolve_var(identifier.clone()) {
             Some(value) => Ok(value.clone()),
@@ -281,6 +288,8 @@ impl Expression {
             },
 
             Self::BuiltInFn(argument_length, function) => {
+                // todo; add collect_arguments() for walking through nested function call
+                //       and collecting the arguments into a vec
                 if argument_values.len() != (argument_length as usize) {
                     return Err(format!(
                         "function `{}` expected {} arguments, got {} instead",

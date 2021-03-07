@@ -175,23 +175,29 @@ impl Parser {
 
     fn parse_fn_call(&mut self, expr: ast::Expression) -> Result<ast::Expression, Box<dyn std::error::Error>> {
         //.. <expr>(<arguments, separated by `,`>)
+        //.. This gets turned into a nested FnCall, e.g.: 
+        //   FnCall(FnCall(<expr>, <argument>), <argument>)
 
         self.expect(lexer::TokenType::LParen)?;
 
-        let mut arguments = Vec::new();
         let mut was_separated = true;
+        let mut fn_call = ast::Expression::Null;
 
         while self.accept(lexer::TokenType::RParen)?.is_none() {
             if !was_separated {
                 return Err("unseparated argument name in fn call".into());
             }
 
-            arguments.push(self.parse_expression()?);
+            if fn_call.is_null() {
+                fn_call = ast::Expression::FnCall(Box::new(expr.clone()), vec![self.parse_expression()?]);
+            } else {
+                fn_call = ast::Expression::FnCall(Box::new(fn_call), vec![self.parse_expression()?]);
+            }
             
             was_separated = self.accept(lexer::TokenType::Comma)?.is_some();
         }
 
-        Ok(ast::Expression::FnCall(Box::new(expr), arguments))
+        Ok(fn_call)
     }
 
     fn parse_list(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
