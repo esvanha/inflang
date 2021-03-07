@@ -150,7 +150,27 @@ impl Parser {
 
         let fn_body = self.parse_block()?;
 
-        Ok(ast::Expression::Fn(argument_names, Box::new(fn_body)))
+        if argument_names.len() == 0 {
+            return Ok(ast::Expression::Fn(argument_names, Box::new(fn_body)));
+        }
+
+        //.. Functions are composed of nested unary functions. While looping
+        //   through the argument names, `last_fn` is the outer function every
+        //   time, which will then become the inner function.
+        let mut last_fn = ast::Expression::Fn(
+            vec![argument_names.pop().unwrap()],
+            Box::new(fn_body),
+        );
+        argument_names.reverse();
+
+        for argument_name in argument_names {
+            last_fn = ast::Expression::Fn(
+                vec![argument_name],
+                Box::new(last_fn),
+            );
+        }
+
+        Ok(last_fn)
     }
 
     fn parse_fn_call(&mut self) -> Result<ast::Expression, Box<dyn std::error::Error>> {
