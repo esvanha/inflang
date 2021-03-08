@@ -151,21 +151,21 @@ impl Parser {
         let fn_body = self.parse_block()?;
 
         if argument_names.len() == 0 {
-            return Ok(ast::Expression::Fn(argument_names, Box::new(fn_body)));
+            return Ok(ast::Expression::Fn(None, Box::new(fn_body)));
         }
 
         //.. Functions are composed of nested unary functions. While looping
         //   through the argument names, `last_fn` is the outer function every
         //   time, which will then become the inner function.
         let mut last_fn = ast::Expression::Fn(
-            vec![argument_names.pop().unwrap()],
+            Some(argument_names.pop().unwrap()),
             Box::new(fn_body),
         );
         argument_names.reverse();
 
         for argument_name in argument_names {
             last_fn = ast::Expression::Fn(
-                vec![argument_name],
+                Some(argument_name),
                 Box::new(last_fn),
             );
         }
@@ -189,9 +189,13 @@ impl Parser {
             }
 
             if fn_call.is_null() {
-                fn_call = ast::Expression::FnCall(Box::new(expr.clone()), vec![self.parse_expression()?]);
+                fn_call = ast::Expression::FnCall(
+                    Box::new(expr.clone()), Box::new(Some(self.parse_expression()?))
+                );
             } else {
-                fn_call = ast::Expression::FnCall(Box::new(fn_call), vec![self.parse_expression()?]);
+                fn_call = ast::Expression::FnCall(
+                    Box::new(fn_call), Box::new(Some(self.parse_expression()?))
+                );
             }
             
             was_separated = self.accept(lexer::TokenType::Comma)?.is_some();
@@ -253,10 +257,6 @@ impl Parser {
                 token_type: lexer::TokenType::Identifier,
                 value: identifier,
             } => {
-                /*self.parse_fn_call()
-                    .or(Ok(
-                        ast::Expression::Identifier(identifier)
-                    ))*/
                 self.consume_token();
                 Ok(ast::Expression::Identifier(identifier))
             },

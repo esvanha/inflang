@@ -20,12 +20,12 @@ pub enum Expression {
     IfExpression(Box<Expression>, Box<Expression>, Box<Expression>),
     //.. While: condition, body
     While(Box<Expression>, Box<Expression>),
-    //.. Fn: argument names, function body
-    Fn(Vec<String>, Box<Expression>),
+    //.. Fn: argument name (if given), function body
+    Fn(Option<String>, Box<Expression>),
     //.. LetBinding: variable name, value
     LetBinding(String, Box<Expression>),
-    //.. FnCall: function, arguments
-    FnCall(Box<Expression>, Vec<Expression>),
+    //.. FnCall: function, argument (if given)
+    FnCall(Box<Expression>, Box<Option<Expression>>),
     Block(Vec<Expression>),
     Program(Vec<Expression>),
     //.. BuiltInFn: argument length, function
@@ -91,17 +91,12 @@ impl std::fmt::Display for Expression {
             Self::StringValue(value) => format!("\"{}\"", value),
             Self::BooleanValue(value) => value.to_string(),
             Self::Identifier(name) => name.clone(),
-            Self::Fn(argument_names, body) => {
-                let argument_names_str = format!(
-                    "{}",
-                    argument_names
-                        .iter()
-                        .map(|name| name.to_string())
-                        .collect::<Vec<String>>()
-                        .join(", ")
-                );
-
-                format!("fn ({}) {}", argument_names_str, body)
+            Self::Fn(argument_name, body) => {
+                format!(
+                    "fn ({}) {}",
+                    argument_name.clone().unwrap_or_default(),
+                    body,
+                )
             },
             Self::LetBinding(variable, value) => {
                 format!("let {} = {}", variable, value)
@@ -109,15 +104,11 @@ impl std::fmt::Display for Expression {
             Self::While(condition, body) => {
                 format!("while {} {}", condition, body)
             },
-            Self::FnCall(name, arguments) => {
+            Self::FnCall(name, argument) => {
                 format!(
                     "{}({})",
                     name,
-                    arguments
-                        .iter()
-                        .map(|name| name.to_string())
-                        .collect::<Vec<String>>()
-                        .join(", ")
+                    argument.clone().map(|name| name.to_string()).unwrap_or_default()
                 )
             },
             Self::Null => "<null>".to_string(),
@@ -264,23 +255,25 @@ impl Expression {
         Ok(Expression::List(result_list))
     }
 
-    fn evaluate_fn_call(&self, ctx: SharedContext, function: Box<Expression>, argument_values: &Vec<Expression>) -> Result<Expression, Box<dyn std::error::Error>> {
+    fn evaluate_fn_call(&self, ctx: SharedContext, function: Box<Expression>, argument_value_opt: &Option<Expression>) -> Result<Expression, Box<dyn std::error::Error>> {
         let function_name = function.identifier_name().unwrap_or("<anonymous>".to_string());
 
         match function.evaluate(ctx.clone())? {
-            Self::Fn(argument_names, body) => {
-                if argument_values.len() != argument_names.len() {
+            Self::Fn(argument_name, body) => {
+                if argument_value_opt.is_none() != argument_name.is_none() {
                     return Err(format!(
                         "function `{}` expected {} arguments, got {} instead",
-                        function_name, argument_names.len(), argument_values.len(),
+                        function_name,
+                        if argument_name.is_some() { 1 } else { 0 },
+                        if argument_value_opt.is_some() { 1 } else { 0 },
                     ).into())
                 }
 
-                for i in 0..argument_names.len() {
-                    let value = argument_values[i].clone().evaluate(ctx.clone())?.clone();
+                if let Some(argument_value) = argument_value_opt {
+                    let value = argument_value.clone().evaluate(ctx.clone())?.clone();
 
                     ctx.borrow_mut().add_local_var(
-                        argument_names[i].clone(), value
+                        argument_name.unwrap().clone(), value
                     );
                 }
 
@@ -290,19 +283,20 @@ impl Expression {
             Self::BuiltInFn(argument_length, function) => {
                 // todo; add collect_arguments() for walking through nested function call
                 //       and collecting the arguments into a vec
-                if argument_values.len() != (argument_length as usize) {
+                todo!();
+                /*if argument_values.len() != (argument_length as usize) {
                     return Err(format!(
                         "function `{}` expected {} arguments, got {} instead",
                         function_name, argument_length, argument_values.len(),
                     ).into());
-                }
+                }*/
 
-                let mut evaluated_arguments = Vec::new();
+                /*let mut evaluated_arguments = Vec::new();
                 for argument in argument_values {
-                    evaluated_arguments.push(argument.clone().evaluate(ctx.clone())?);
-                }
+                    evaluated_arguments.push(argument_value.clone().evaluate(ctx.clone())?);
+                }*/
 
-                function(ctx.clone(), evaluated_arguments)
+                function(ctx.clone(), vec![])//evaluated_arguments)
             }
 
             other => {
