@@ -200,6 +200,14 @@ impl Parser {
             
             was_separated = self.accept(lexer::TokenType::Comma)?.is_some();
         }
+        
+        //.. If there were no arguments between the parentheses, fn_call will still
+        //   be Null.
+        if fn_call.is_null() {
+            fn_call = ast::Expression::FnCall(
+                Box::new(expr.clone()), Box::new(None),
+            );
+        }
 
         Ok(fn_call)
     }
