@@ -106,7 +106,7 @@ impl std::fmt::Display for Expression {
             },
             Self::FnCall(name, argument) => {
                 format!(
-                    "{}({})",
+                    "({}({}))",
                     name,
                     argument.clone().map(|name| name.to_string()).unwrap_or_default()
                 )
@@ -258,7 +258,7 @@ impl Expression {
     fn evaluate_fn_call(&self, ctx: SharedContext, function: Box<Expression>, argument_value_opt: &Option<Expression>) -> Result<Expression, Box<dyn std::error::Error>> {
         let function_name = function.identifier_name().unwrap_or("<anonymous>".to_string());
 
-        match function.evaluate(ctx.clone())? {
+        match function.clone().evaluate(ctx.clone())? {
             Self::Fn(argument_name, body) => {
                 if argument_value_opt.is_none() != argument_name.is_none() {
                     return Err(format!(
@@ -280,23 +280,41 @@ impl Expression {
                 body.clone().evaluate(ctx.clone())
             },
 
-            Self::BuiltInFn(argument_length, function) => {
-                // todo; add collect_arguments() for walking through nested function call
-                //       and collecting the arguments into a vec
-                todo!();
-                /*if argument_values.len() != (argument_length as usize) {
+            Self::BuiltInFn(argument_length, closure_fn) => {
+                if argument_length != 0 && argument_value_opt.is_none() {
                     return Err(format!(
                         "function `{}` expected {} arguments, got {} instead",
-                        function_name, argument_length, argument_values.len(),
+                        function_name,
+                        argument_length,
+                        if argument_value_opt.is_some() { 1 } else { 0 },
                     ).into());
-                }*/
+                }
 
-                /*let mut evaluated_arguments = Vec::new();
-                for argument in argument_values {
-                    evaluated_arguments.push(argument_value.clone().evaluate(ctx.clone())?);
-                }*/
+                //.. In the case of a built-in function accepting multiple
+                //   arguments, each time an argument is applied, a
+                //   BuiltInFunction is returned with a new closure, containing
+                //   the applied argument. This is the necessary because all
+                //   functions are unary functions, which allows for the
+                //   support of partial-application.
+                if argument_length > 1 {
+                    let argument_value = argument_value_opt.clone().unwrap();
+                    return Ok(Self::BuiltInFn(argument_length - 1, Rc::new(move |ctx, mut items| {
+                        items.insert(0, argument_value.clone().evaluate(ctx.clone())?);
 
-                function(ctx.clone(), vec![])//evaluated_arguments)
+                        closure_fn(ctx.clone(), items)
+                    })));
+                }
+
+                //.. If there are one or zero arguments applied, call the
+                //   closure function.
+                if let Some(argument_value) = argument_value_opt {
+                    closure_fn(
+                        ctx.clone(),
+                        vec![argument_value.clone().evaluate(ctx.clone())?],
+                    )
+                } else {
+                    closure_fn(ctx.clone(), Vec::new())
+                }
             }
 
             other => {
@@ -340,8 +358,8 @@ impl Expression {
             Self::LetBinding(variable_name, value) => {
                 self.evaluate_let_binding(ctx.clone(), variable_name, value)?
             },
-            Self::FnCall(function_name, argument_values) => {
-                self.evaluate_fn_call(ctx.clone(), function_name.clone(), argument_values)?
+            Self::FnCall(function_name, argument_value) => {
+                self.evaluate_fn_call(ctx.clone(), function_name.clone(), argument_value)?
             },
             Self::While(condition, body) => {
                 self.evaluate_while(ctx.clone(), condition, body)?

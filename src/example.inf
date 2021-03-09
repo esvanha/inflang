@@ -2,9 +2,7 @@
 % Example program demonstrating the basics of inflang.
 %
 
-let inc = fn (n) {
-    +(n, 1);
-};
+let inc = +(1);
 
 % Prime check function
 let is_prime = fn (x) {

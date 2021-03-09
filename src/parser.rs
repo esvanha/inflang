@@ -202,7 +202,7 @@ impl Parser {
         }
         
         //.. If there were no arguments between the parentheses, fn_call will still
-        //   be Null.
+        //   be ast::Expression::Null.
         if fn_call.is_null() {
             fn_call = ast::Expression::FnCall(
                 Box::new(expr.clone()), Box::new(None),
