@@ -8,7 +8,7 @@ pub fn builtin_functions() -> HashMap<String, Expression> {
 
     function_map.insert(
         "print".to_string(),
-        Expression::BuiltInFn(1, Rc::new(|ctx, items| {
+        Expression::BuiltInFn(1, Rc::new(|_ctx, items| {
             match items[0].clone() {
                 Expression::StringValue(string) => print!("{}", string),
                 other => print!("{}", other),
@@ -20,7 +20,7 @@ pub fn builtin_functions() -> HashMap<String, Expression> {
 
     function_map.insert(
         "print_line".to_string(),
-        Expression::BuiltInFn(1, Rc::new(|ctx, items| {
+        Expression::BuiltInFn(1, Rc::new(|_ctx, items| {
             match items[0].clone() {
                 Expression::StringValue(string) => println!("{}", string),
                 other => println!("{}", other),
@@ -32,7 +32,7 @@ pub fn builtin_functions() -> HashMap<String, Expression> {
 
     function_map.insert(
         "+".to_string(),
-        Expression::BuiltInFn(2, Rc::new(|ctx, items| {
+        Expression::BuiltInFn(2, Rc::new(|_ctx, items| {
             let a = items[0].clone().integer_value()?;
             let b = items[1].clone().integer_value()?;
 
@@ -42,7 +42,7 @@ pub fn builtin_functions() -> HashMap<String, Expression> {
 
     function_map.insert(
         "/".to_string(),
-        Expression::BuiltInFn(2, Rc::new(|ctx, items| {
+        Expression::BuiltInFn(2, Rc::new(|_ctx, items| {
             let a = items[0].clone().integer_value()?;
             let b = items[1].clone().integer_value()?;
 
@@ -52,7 +52,7 @@ pub fn builtin_functions() -> HashMap<String, Expression> {
 
     function_map.insert(
         "-".to_string(),
-        Expression::BuiltInFn(2, Rc::new(|ctx, items| {
+        Expression::BuiltInFn(2, Rc::new(|_ctx, items| {
             let a = items[0].clone().integer_value()?;
             let b = items[1].clone().integer_value()?;
 
@@ -62,7 +62,7 @@ pub fn builtin_functions() -> HashMap<String, Expression> {
 
     function_map.insert(
         "*".to_string(),
-        Expression::BuiltInFn(2, Rc::new(|ctx, items| {
+        Expression::BuiltInFn(2, Rc::new(|_ctx, items| {
             let a = items[0].clone().integer_value()?;
             let b = items[1].clone().integer_value()?;
 
@@ -72,7 +72,7 @@ pub fn builtin_functions() -> HashMap<String, Expression> {
 
     function_map.insert(
         "<".to_string(),
-        Expression::BuiltInFn(2, Rc::new(|ctx, items| {
+        Expression::BuiltInFn(2, Rc::new(|_ctx, items| {
             let a = items[0].clone().integer_value()?;
             let b = items[1].clone().integer_value()?;
 
@@ -82,7 +82,7 @@ pub fn builtin_functions() -> HashMap<String, Expression> {
 
     function_map.insert(
         ">".to_string(),
-        Expression::BuiltInFn(2, Rc::new(|ctx, items| {
+        Expression::BuiltInFn(2, Rc::new(|_ctx, items| {
             let a = items[0].clone().integer_value()?;
             let b = items[1].clone().integer_value()?;
 
@@ -92,14 +92,14 @@ pub fn builtin_functions() -> HashMap<String, Expression> {
 
     function_map.insert(
         "eq".to_string(),
-        Expression::BuiltInFn(2, Rc::new(|ctx, items| {
+        Expression::BuiltInFn(2, Rc::new(|_ctx, items| {
             Ok(Expression::BooleanValue(items[0] == items[1]))
         }
     )));
 
     function_map.insert(
         "not".to_string(),
-        Expression::BuiltInFn(1, Rc::new(|ctx, items| {
+        Expression::BuiltInFn(1, Rc::new(|_ctx, items| {
             let a = items[0].boolean_value()?;
             Ok(Expression::BooleanValue(!a))
         }
@@ -107,7 +107,7 @@ pub fn builtin_functions() -> HashMap<String, Expression> {
 
     function_map.insert(
         "mod".to_string(),
-        Expression::BuiltInFn(2, Rc::new(|ctx, items| {
+        Expression::BuiltInFn(2, Rc::new(|_ctx, items| {
             let a = items[0].clone().integer_value()?;
             let b = items[1].clone().integer_value()?;
 
@@ -117,7 +117,7 @@ pub fn builtin_functions() -> HashMap<String, Expression> {
 
     function_map.insert(
         "sqrt".to_string(),
-        Expression::BuiltInFn(1, Rc::new(|ctx, items| {
+        Expression::BuiltInFn(1, Rc::new(|_ctx, items| {
             let a = items[0].clone().integer_value()?;
 
             Ok(Expression::IntegerValue((a as f64).sqrt() as u64))
@@ -126,7 +126,7 @@ pub fn builtin_functions() -> HashMap<String, Expression> {
 
     function_map.insert(
         "get_input_line".to_string(),
-        Expression::BuiltInFn(0, Rc::new(|ctx, items| {
+        Expression::BuiltInFn(0, Rc::new(|_ctx, _items| {
             let mut input = String::new();
             std::io::stdin().read_line(&mut input)?;
 
@@ -143,7 +143,7 @@ pub fn builtin_functions() -> HashMap<String, Expression> {
 
     function_map.insert(
         "join_str".to_string(),
-        Expression::BuiltInFn(2, Rc::new(|ctx, items| {
+        Expression::BuiltInFn(2, Rc::new(|_ctx, items| {
             let a = items[0].clone().string_value()?;
             let b = items[1].clone().string_value()?;
 
@@ -153,7 +153,7 @@ pub fn builtin_functions() -> HashMap<String, Expression> {
 
     function_map.insert(
         "str_to_int".to_string(),
-        Expression::BuiltInFn(1, Rc::new(|ctx, items| {
+        Expression::BuiltInFn(1, Rc::new(|_ctx, items| {
             let a = items[0].clone().string_value()?;
 
             Ok(Expression::IntegerValue(a.parse()?))
@@ -162,7 +162,7 @@ pub fn builtin_functions() -> HashMap<String, Expression> {
 
     function_map.insert(
         "list_len".to_string(),
-        Expression::BuiltInFn(1, Rc::new(|ctx, items| {
+        Expression::BuiltInFn(1, Rc::new(|_ctx, items| {
             let len = items[0].clone().list_value()?.len();
 
             Ok(Expression::IntegerValue(len as u64))
@@ -171,7 +171,7 @@ pub fn builtin_functions() -> HashMap<String, Expression> {
 
     function_map.insert(
         "list_nth".to_string(),
-        Expression::BuiltInFn(2, Rc::new(|ctx, items| {
+        Expression::BuiltInFn(2, Rc::new(|_ctx, items| {
             let nth = items[0].clone().integer_value()?;
             let list = items[1].clone().list_value()?;
 
@@ -188,7 +188,7 @@ pub fn builtin_functions() -> HashMap<String, Expression> {
 
     function_map.insert(
         "list_push".to_string(),
-        Expression::BuiltInFn(2, Rc::new(|ctx, items| {
+        Expression::BuiltInFn(2, Rc::new(|_ctx, items| {
             let mut list = items[0].clone().list_value()?;
             let element = items[1].clone();
             

@@ -157,6 +157,7 @@ impl Lexer {
         }
     }
 
+    #[allow(dead_code)]
     fn expect(&mut self, expected_str: String) -> Result<(), Box<dyn std::error::Error>> {
         let actual = self
             .take(expected_str.len())
