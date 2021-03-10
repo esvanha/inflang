@@ -160,5 +160,43 @@ pub fn builtin_functions() -> HashMap<String, Expression> {
         }
     )));
 
+    function_map.insert(
+        "list_len".to_string(),
+        Expression::BuiltInFn(1, Rc::new(|ctx, items| {
+            let len = items[0].clone().list_value()?.len();
+
+            Ok(Expression::IntegerValue(len as u64))
+        }
+    )));
+
+    function_map.insert(
+        "list_nth".to_string(),
+        Expression::BuiltInFn(2, Rc::new(|ctx, items| {
+            let nth = items[0].clone().integer_value()?;
+            let list = items[1].clone().list_value()?;
+
+            if nth > (list.len() as u64 - 1) {
+                return Err(format!(
+                    "trying to access element #{} of a list only containing {} elements",
+                    nth, list.len()
+                ).into());
+            }
+
+            Ok(list[nth as usize].clone())
+        }
+    )));
+
+    function_map.insert(
+        "list_push".to_string(),
+        Expression::BuiltInFn(2, Rc::new(|ctx, items| {
+            let mut list = items[0].clone().list_value()?;
+            let element = items[1].clone();
+            
+            list.push(element);
+
+            Ok(Expression::List(list.clone()))
+        }
+    )));
+
     function_map
 }

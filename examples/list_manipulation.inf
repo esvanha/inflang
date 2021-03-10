@@ -1,0 +1,53 @@
+%
+% Inflang example demonstrating list manipulation.
+%
+
+let inc = +(1);
+
+let map = fn (function, list) {
+    let stop = false;
+    let i = 0;
+    let result = [];
+
+    while not(stop) {
+        let to_add = function(list_nth(i, list));
+        let result = list_push(result, to_add);
+        
+        let i = inc(i);
+        let stop = eq(list_len(list), i);
+    };
+
+    result;
+};
+
+let filter = fn (function, list) {
+    let stop = false;
+    let i = 0;
+    let result = [];
+
+    while not(stop) {
+        let current_item = list_nth(i, list);
+
+        let result = if function(current_item) {
+            list_push(result, current_item);
+        } else {
+            result;
+        };
+        
+        let i = inc(i);
+        let stop = eq(list_len(list), i);
+    };
+
+    result;
+}; 
+
+print_line("*(2) mapped to [1, 2, 3]: ");
+print_line(map(*(2), [1, 2, 3]));
+
+print_line("Only even numbers of [1, 2, 3, 4, 5]: ");
+print_line(
+    filter(
+        fn (n) { eq(mod(n, 2), 0); },
+        [1, 2, 3, 4, 5]
+    )
+);

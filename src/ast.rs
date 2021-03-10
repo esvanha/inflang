@@ -144,9 +144,11 @@ pub struct EvaluationContext {
 
 impl EvaluationContext {
     pub fn new() -> Self {
-        Self {
+        let mut ctx = Self {
             scopes: vec![EvaluationScope::new_default()],
-        }
+        };
+        ctx.enter_scope();
+        ctx
     }
 
     pub fn enter_scope(&mut self) {
@@ -200,6 +202,13 @@ impl Expression {
         match &self {
             Self::BooleanValue(n) => Ok(*n),
             _ => Err(format!("expected boolean, got `{}`", self).into()),
+        }
+    }
+
+    pub fn list_value(&self) -> Result<Vec<Expression>, Box<dyn std::error::Error>> {
+        match &self {
+            Self::List(n) => Ok(n.clone()),
+            _ => Err(format!("expected list, got `{}`", self).into()),
         }
     }
 
@@ -258,7 +267,9 @@ impl Expression {
     fn evaluate_fn_call(&self, ctx: SharedContext, function: Box<Expression>, argument_value_opt: &Option<Expression>) -> Result<Expression, Box<dyn std::error::Error>> {
         let function_name = function.identifier_name().unwrap_or("<anonymous>".to_string());
 
-        match function.clone().evaluate(ctx.clone())? {
+        ctx.borrow_mut().enter_scope();
+
+        let result = match function.clone().evaluate(ctx.clone())? {
             Self::Fn(argument_name, body) => {
                 if argument_value_opt.is_none() != argument_name.is_none() {
                     return Err(format!(
@@ -282,32 +293,30 @@ impl Expression {
 
             Self::BuiltInFn(argument_length, closure_fn) => {
                 if argument_length != 0 && argument_value_opt.is_none() {
-                    return Err(format!(
+                    Err(format!(
                         "function `{}` expected {} arguments, got {} instead",
                         function_name,
                         argument_length,
                         if argument_value_opt.is_some() { 1 } else { 0 },
-                    ).into());
-                }
-
+                    ).into())
+                
                 //.. In the case of a built-in function accepting multiple
                 //   arguments, each time an argument is applied, a
                 //   BuiltInFunction is returned with a new closure, containing
                 //   the applied argument. This is the necessary because all
                 //   functions are unary functions, which allows for the
                 //   support of partial-application.
-                if argument_length > 1 {
+                } else if argument_length > 1 {
                     let argument_value = argument_value_opt.clone().unwrap();
-                    return Ok(Self::BuiltInFn(argument_length - 1, Rc::new(move |ctx, mut items| {
+                    Ok(Self::BuiltInFn(argument_length - 1, Rc::new(move |ctx, mut items| {
                         items.insert(0, argument_value.clone().evaluate(ctx.clone())?);
 
                         closure_fn(ctx.clone(), items)
-                    })));
-                }
+                    })))
 
                 //.. If there are one or zero arguments applied, call the
                 //   closure function.
-                if let Some(argument_value) = argument_value_opt {
+                } else if let Some(argument_value) = argument_value_opt {
                     closure_fn(
                         ctx.clone(),
                         vec![argument_value.clone().evaluate(ctx.clone())?],
@@ -318,9 +327,12 @@ impl Expression {
             }
 
             other => {
-                return Err(format!("trying to call `{}`, which is not a function", other).into());
+                Err(format!("trying to call `{}`, which is not a function", other).into())
             },
-        }
+        };
+
+        ctx.borrow_mut().exit_scope();
+        result
     }
 
     pub fn evaluate_while(&self, ctx: SharedContext, condition: &Expression, body: &Expression) -> Result<Expression, Box<dyn std::error::Error>> {
@@ -334,9 +346,6 @@ impl Expression {
     }
 
     pub fn evaluate(self, ctx: SharedContext) -> Result<Expression, Box<dyn std::error::Error>> {
-        ctx.borrow_mut().enter_scope();
-        
-        
         let result = match &self {
             Self::BooleanValue(_) => self,
             Self::IntegerValue(_) => self,
@@ -381,8 +390,6 @@ impl Expression {
                 Expression::EndOfProgram
             },
         };
-
-        ctx.borrow_mut().exit_scope();
 
         Ok(result)
     }
